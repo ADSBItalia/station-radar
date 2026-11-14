@@ -1,0 +1,409 @@
+use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
+use scraper::{Html, Selector};
+use serde_json::Value;
+use std::time::Duration;
+
+pub const UI_ASSET_BLACKLIST: &[&str] = &[
+    "avatar", "author", "compact", "help", "info-icon", "information",
+    "magazine", "news", "person", "profile", "thumbnail", "user-icon",
+    "search", "brush", "stroke", "play", "video", "arrow", "chevron", "menu", "burger",
+    "close", "cart", "basket", "bag", "donate", "donation", "give", "facebook", "twitter",
+    "instagram", "youtube", "linkedin", "tiktok", "pinterest", "whatsapp", "app-store",
+    "appstore", "google-play", "googleplay", "sponsor", "partner", "lottery",
+    "charity", "gift-aid", "divider", "separator", "spinner", "loading",
+    "banner-bg", "background", "header-bg", "hero", "carousel", "slider", "cookie",
+    "popup", "modal", "feedback", "review", "rating", "star", "award", "iso9001",
+    "footer", "flag", "map", "pog", "bullet",
+];
+
+pub fn make_http_client() -> reqwest::Client {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        USER_AGENT,
+        HeaderValue::from_static("ADSBItaliaLogoBot/2.0 (https://adsbitalia.it; admin@adsbitalia.it)"),
+    );
+    reqwest::Client::builder()
+        .default_headers(headers)
+        .timeout(Duration::from_secs(6))
+        .build()
+        .unwrap_or_default()
+}
+
+pub fn is_junk_operator_name(op: &str) -> bool {
+    let l = op.to_lowercase();
+    let l_trim = l.trim();
+    if l_trim.is_empty()
+        || l_trim == "unknown"
+        || l_trim == "none"
+        || l_trim == "n/a"
+        || l_trim == "private"
+        || l_trim == "private owner"
+        || l_trim.starts_with("unregistered") {
+        return true;
+    }
+    if l_trim.contains(',') {
+        return true;
+    }
+    let junk_terms = [
+        " llc", " inc", " ltd", " corp", " trustee", " trust", " leasing",
+        " holdings", " enterprises", " capital", " investments", " bank",
+        " management", " properties", " partners", " aircraft leasing",
+        " aircraft llc", " aviation llc", " aero llc", " flight llc"
+    ];
+    for term in junk_terms {
+        if l_trim.ends_with(term) || l_trim.contains(&format!("{} ", term.trim())) {
+            return true;
+        }
+    }
+    let tokens: Vec<&str> = op.split_whitespace().collect();
+    if tokens.len() >= 2 && tokens.len() <= 4 {
+        let has_single_letter = tokens.iter().any(|t| t.len() == 1 && t.chars().all(|c| c.is_ascii_alphabetic()));
+        let all_caps = op.chars().filter(|c| c.is_alphabetic()).all(|c| c.is_uppercase());
+        if has_single_letter && all_caps {
+            return true;
+        }
+    }
+    false
+}
+
+pub async fn query_hex_operator(client: &reqwest::Client, hex: &str) -> Option<(String, String)> {
+    let h = hex.trim().to_uppercase();
+    if h.len() != 6 { return None; }
+
+    // 0. Priority: Try Planespotters photo API by Mode-S HEX (identifies active operational livery)
+    let ps_hex_url = format!("https://api.planespotters.net/pub/photos/hex/{}", h);
+    if let Ok(resp) = client.get(&ps_hex_url).send().await {
+        if resp.status().is_success() {
+            if let Ok(v) = resp.json::<Value>().await {
+                if let Some(photos) = v.get("photos").and_then(|p| p.as_array()) {
+                    for p in photos {
+                        if let Some(op) = p.get("operator").and_then(|o| o.get("name")).and_then(|n| n.as_str()) {
+                            let clean = op.trim();
+                            if !clean.is_empty() && clean.len() > 2 && !is_junk_operator_name(clean) {
+                                return Some((clean.to_string(), String::new()));
+                            }
+                        }
+                        if let Some(link) = p.get("link").and_then(|l| l.as_str()) {
+                            if let Some(path_part) = link.split("/photo/").nth(1) {
+                                if let Some(slug_raw) = path_part.split('/').nth(1) {
+                                    let slug = slug_raw.split('?').next().unwrap_or(slug_raw).to_lowercase();
+                                    let parts: Vec<&str> = slug.split('-').collect();
+                                    let mfg_keywords = [
+                                        "airbus", "boeing", "eurocopter", "bombardier", "embraer", "cessna",
+                                        "beechcraft", "piper", "bell", "sikorsky", "mcdonnell", "lockheed",
+                                        "atr", "de-havilland", "dassault", "pilatus", "gulfstream", "saab",
+                                        "fokker", "antonov", "ilyushin", "sukhoi", "agusta", "leonardo", "robinson"
+                                    ];
+                                    let mfg_pos = parts.iter().position(|t| mfg_keywords.contains(t));
+                                    if let Some(m_idx) = mfg_pos {
+                                        let start_idx = if parts.len() > 2 && (parts[0].len() <= 2 || parts[0] == "n") { 2 } else { 1 };
+                                        if m_idx > start_idx {
+                                            let op_candidate = parts[start_idx..m_idx].join(" ");
+                                            if op_candidate.len() > 2 && !is_junk_operator_name(&op_candidate) {
+                                                return Some((op_candidate, String::new()));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 1. Try hexdb.io
+    let hexdb_url = format!("https://hexdb.io/api/v1/aircraft/{}", h);
+    if let Ok(resp) = client.get(&hexdb_url).send().await {
+        if resp.status().is_success() {
+            if let Ok(v) = resp.json::<Value>().await {
+                let owner = v.get("RegisteredOwners").and_then(|o| o.as_str())
+                    .or_else(|| v.get("OperatorFlagCode").and_then(|o| o.as_str()))
+                    .unwrap_or("").trim();
+                let reg = v.get("Registration").and_then(|r| r.as_str()).unwrap_or("").trim().to_uppercase();
+                if !owner.is_empty() && !is_junk_operator_name(owner) {
+                    return Some((owner.to_string(), reg));
+                }
+            }
+        }
+    }
+
+    // 2. Try adsbdb.com
+    let adsb_url = format!("https://api.adsbdb.com/v0/aircraft/{}", h);
+    if let Ok(resp) = client.get(&adsb_url).send().await {
+        if resp.status().is_success() {
+            if let Ok(v) = resp.json::<Value>().await {
+                let ac = v.get("response").and_then(|r| r.get("aircraft"));
+                if let Some(ac_obj) = ac {
+                    let owner = ac_obj.get("registered_owner").and_then(|o| o.as_str())
+                        .or_else(|| ac_obj.get("operator").and_then(|o| o.as_str()))
+                        .unwrap_or("").trim();
+                    let reg = ac_obj.get("registration").and_then(|r| r.as_str()).unwrap_or("").trim().to_uppercase();
+                    if !owner.is_empty() && !is_junk_operator_name(owner) {
+                        return Some((owner.to_string(), reg));
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
+pub async fn query_planespotters(client: &reqwest::Client, reg: &str) -> Option<String> {
+    if reg.is_empty() { return None; }
+    let url = format!("https://api.planespotters.net/pub/photos/reg/{}", reg);
+    let resp = client.get(&url).send().await.ok()?;
+    if !resp.status().is_success() { return None; }
+    let v: Value = resp.json().await.ok()?;
+    let photos = v.get("photos")?.as_array()?;
+    for p in photos {
+        if let Some(op) = p.get("operator").and_then(|o| o.get("name")).and_then(|n| n.as_str()) {
+            let clean = op.trim();
+            if !clean.is_empty() && clean.len() > 2 && !is_junk_operator_name(clean) {
+                return Some(clean.to_string());
+            }
+        }
+        // Fallback: parse operator from link URL slug
+        if let Some(link) = p.get("link").and_then(|l| l.as_str()) {
+            if let Some(path_part) = link.split("/photo/").nth(1) {
+                if let Some(slug_raw) = path_part.split('/').nth(1) {
+                    let slug = slug_raw.split('?').next().unwrap_or(slug_raw).to_lowercase();
+                    let clean_reg_hyphen = reg.to_lowercase();
+                    let clean_reg = reg.to_lowercase().replace("-", "");
+
+                    let mut after_reg = slug.as_str();
+                    if after_reg.starts_with(&clean_reg_hyphen) {
+                        after_reg = &after_reg[clean_reg_hyphen.len()..];
+                    } else if after_reg.starts_with(&clean_reg) {
+                        after_reg = &after_reg[clean_reg.len()..];
+                    }
+                    let after_reg = after_reg.trim_start_matches('-');
+
+                    let mfg_keywords = [
+                        "airbus", "boeing", "eurocopter", "bombardier", "embraer", "cessna",
+                        "beechcraft", "piper", "bell", "sikorsky", "mcdonnell", "lockheed",
+                        "atr", "de-havilland", "dassault", "pilatus", "gulfstream", "saab",
+                        "fokker", "antonov", "ilyushin", "sukhoi", "agusta", "leonardo", "robinson"
+                    ];
+
+                    let mut candidate = after_reg.to_string();
+                    for kw in mfg_keywords {
+                        let kw_pattern = format!("-{}", kw);
+                        if let Some(idx) = candidate.find(&kw_pattern) {
+                            candidate = candidate[..idx].to_string();
+                            break;
+                        } else if candidate.starts_with(kw) {
+                            candidate.clear();
+                            break;
+                        }
+                    }
+
+                    let candidate = candidate.trim_matches('-');
+                    if candidate.len() > 2 {
+                        let op_formatted = candidate.replace('-', " ");
+                        if !is_junk_operator_name(&op_formatted) {
+                            return Some(op_formatted);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+pub async fn query_wikidata(client: &reqwest::Client, op_name: &str) -> Option<(Option<String>, Option<String>)> {
+    if op_name.is_empty() { return None; }
+    let url = format!(
+        "https://www.wikidata.org/w/api.php?action=wbsearchentities&search={}&language=en&limit=3&format=json",
+        urlencoding_encode(op_name)
+    );
+    let resp = client.get(&url).send().await.ok()?;
+    if !resp.status().is_success() { return None; }
+    let v: Value = resp.json().await.ok()?;
+    let search = v.get("search")?.as_array()?;
+    if search.is_empty() { return None; }
+
+    let entity_id = search[0].get("id")?.as_str()?;
+    let entity_url = format!("https://www.wikidata.org/wiki/Special:EntityData/{}.json", entity_id);
+    let ent_resp = client.get(&entity_url).send().await.ok()?;
+    if !ent_resp.status().is_success() { return None; }
+    let ent_v: Value = ent_resp.json().await.ok()?;
+
+    let claims = ent_v.get("entities")?.get(entity_id)?.get("claims")?;
+
+    // P856: official website
+    let mut website = None;
+    if let Some(p856) = claims.get("P856").and_then(|p| p.as_array()) {
+        if !p856.is_empty() {
+            if let Some(val) = p856[0].get("mainsnak")
+                .and_then(|m| m.get("datavalue"))
+                .and_then(|d| d.get("value"))
+                .and_then(|v| v.as_str())
+            {
+                website = Some(val.to_string());
+            }
+        }
+    }
+
+    // P154: logo image
+    let mut logo_url = None;
+    if let Some(p154) = claims.get("P154").and_then(|p| p.as_array()) {
+        if !p154.is_empty() {
+            if let Some(file_name) = p154[0].get("mainsnak")
+                .and_then(|m| m.get("datavalue"))
+                .and_then(|d| d.get("value"))
+                .and_then(|v| v.as_str())
+            {
+                logo_url = Some(format!(
+                    "https://commons.wikimedia.org/wiki/Special:FilePath/{}",
+                    urlencoding_encode(file_name)
+                ));
+            }
+        }
+    }
+
+    Some((logo_url, website))
+}
+
+pub async fn query_wikimedia_commons_search(client: &reqwest::Client, op_name: &str) -> Option<(Vec<u8>, bool)> {
+    let query = format!("{} logo", op_name);
+    let url = format!(
+        "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch={}&gsrnamespace=6&prop=imageinfo&iiprop=url&format=json",
+        urlencoding_encode(&query)
+    );
+    let resp = client.get(&url).send().await.ok()?;
+    if !resp.status().is_success() { return None; }
+    let v: Value = resp.json().await.ok()?;
+    let pages = v.get("query")?.get("pages")?.as_object()?;
+    for page in pages.values() {
+        let title = page.get("title").and_then(|t| t.as_str()).unwrap_or("").to_lowercase();
+        if title.ends_with(".svg") || title.ends_with(".png") {
+            if let Some(info) = page.get("imageinfo").and_then(|i| i.as_array()).and_then(|a| a.get(0)) {
+                if let Some(img_url) = info.get("url").and_then(|u| u.as_str()) {
+                    if let Ok(img_resp) = client.get(img_url).send().await {
+                        if img_resp.status().is_success() {
+                            if let Ok(bytes) = img_resp.bytes().await {
+                                if bytes.len() > 300 {
+                                    let is_svg = img_url.to_lowercase().ends_with(".svg") || bytes.starts_with(b"<?xml") || bytes.starts_with(b"<svg");
+                                    return Some((bytes.to_vec(), is_svg));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+pub async fn scrape_official_site_logo(client: &reqwest::Client, site_url: &str) -> Option<(Vec<u8>, bool)> {
+    let parsed_url = reqwest::Url::parse(site_url).ok()?;
+    let domain = parsed_url.host_str().unwrap_or("").to_lowercase();
+    let domain_clean = domain.trim_start_matches("www.").split('.').next().unwrap_or("").to_string();
+
+    let resp = client.get(site_url).send().await.ok()?;
+    if !resp.status().is_success() { return None; }
+    let html_text = resp.text().await.ok()?;
+
+    let candidates = {
+        let document = Html::parse_document(&html_text);
+        let mut list: Vec<(i32, String)> = Vec::new();
+
+        if let Ok(selector) = Selector::parse("img, source") {
+            for element in document.select(&selector) {
+                let mut sources = Vec::new();
+
+                if let Some(src) = element.value().attr("src") { sources.push(src); }
+                if let Some(dsrc) = element.value().attr("data-src") { sources.push(dsrc); }
+                if let Some(srcset) = element.value().attr("srcset") {
+                    for part in srcset.split(',') {
+                        if let Some(url_part) = part.trim().split_whitespace().next() {
+                            sources.push(url_part);
+                        }
+                    }
+                }
+
+                let outer_html = element.html().to_lowercase();
+                for src in sources {
+                    let src_lower = src.to_lowercase();
+                    if src_lower.starts_with("data:") { continue; }
+                    if UI_ASSET_BLACKLIST.iter().any(|b| src_lower.contains(b) || outer_html.contains(b)) {
+                        continue;
+                    }
+
+                    let mut score = 0;
+                    if src_lower.ends_with(".svg") { score += 50; }
+                    if src_lower.contains("logo") || outer_html.contains("logo") { score += 40; }
+                    if src_lower.contains("brand") || outer_html.contains("brand") { score += 30; }
+                    if src_lower.contains("horizontal") || src_lower.contains("mobile") || outer_html.contains("mobile") { score += 80; }
+                    if src_lower.contains("header") || outer_html.contains("header") { score += 20; }
+                    if !domain_clean.is_empty() && (src_lower.contains(&domain_clean) || outer_html.contains(&domain_clean)) {
+                        score += 100;
+                    }
+
+                    if score >= 60 {
+                        if let Ok(full_url) = parsed_url.join(src) {
+                            list.push((score, full_url.to_string()));
+                        }
+                    }
+                }
+            }
+        }
+        list.sort_by(|a, b| b.0.cmp(&a.0));
+        list
+    };
+
+    for (_, url) in candidates {
+        if let Ok(img_resp) = client.get(&url).send().await {
+            if img_resp.status().is_success() {
+                if let Ok(bytes) = img_resp.bytes().await {
+                    if bytes.len() > 300 {
+                        let is_svg = url.ends_with(".svg") || bytes.starts_with(b"<?xml") || bytes.starts_with(b"<svg");
+                        return Some((bytes.to_vec(), is_svg));
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
+pub async fn resolve_operator_logo(client: &reqwest::Client, op_name: &str) -> Option<(Vec<u8>, bool)> {
+    if let Some((logo_url, site_url)) = query_wikidata(client, op_name).await {
+        if let Some(site) = site_url {
+            if let Some((data, is_svg)) = scrape_official_site_logo(client, &site).await {
+                return Some((data, is_svg));
+            }
+        }
+        if let Some(logo) = logo_url {
+            if let Ok(resp) = client.get(&logo).send().await {
+                if resp.status().is_success() {
+                    if let Ok(bytes) = resp.bytes().await {
+                        let is_svg = logo.to_lowercase().ends_with(".svg") || bytes.starts_with(b"<?xml") || bytes.starts_with(b"<svg");
+                        return Some((bytes.to_vec(), is_svg));
+                    }
+                }
+            }
+        }
+    }
+
+    // Strict rule: if no verified official logo is found, return None (DO NOT guess or grab random Commons files)
+    None
+}
+
+fn urlencoding_encode(s: &str) -> String {
+    let mut encoded = String::new();
+    for b in s.bytes() {
+        if b.is_ascii_alphanumeric() || b == b'-' || b == b'_' || b == b'.' || b == b'~' {
+            encoded.push(b as char);
+        } else {
+            encoded.push_str(&format!("%{:02X}", b));
+        }
+    }
+    encoded
+}

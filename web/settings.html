@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Impostazioni Stazione · ADSBItalia Radar</title>
+  <link rel="icon" type="image/svg+xml" href="fiscaglia-favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet for interactive coordinates picker -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #050c14;
+      --bg-panel: rgba(7, 23, 36, 0.94);
+      --bg-card: rgba(11, 34, 52, 0.96);
+      --bg-hover: rgba(56, 189, 248, 0.12);
+      --border-color: rgba(56, 189, 248, 0.22);
+      --border-highlight: rgba(56, 189, 248, 0.65);
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.45);
+      --text-main: #f0f6fc;
+      --text-muted: #9eb7c5;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      font-family: var(--font-sans);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.08) 0%, transparent 45%),
+        radial-gradient(circle at 85% 80%, rgba(14, 165, 233, 0.05) 0%, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    /* Top Navigation Bar */
+    header {
+      background: var(--bg-panel);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      height: 38px;
+      width: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--border-highlight);
+      object-fit: cover;
+    }
+
+    .brand-text h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-text p {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--border-highlight);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #030712;
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.15);
+      transform: translateY(-1px);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1080px;
+      width: 100%;
+      margin: 28px auto 80px;
+      padding: 0 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .section-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(12px);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .section-header h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-header p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    input[type="text"], input[type="number"], select {
+      background: rgba(3, 7, 18, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    /* Map Picker */
+    #pickerMap {
+      width: 100%;
+      height: 280px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      margin-top: 8px;
+      z-index: 10;
+    }
+
+    /* Theme Presets */
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .preset-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .preset-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--border-highlight);
+    }
+
+    .preset-card.active {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.12);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .color-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+    }
+
+    .preset-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .color-picker-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    input[type="color"] {
+      -webkit-appearance: none;
+      border: none;
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      cursor: pointer;
+      background: transparent;
+    }
+    input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+    input[type="color"]::-webkit-color-swatch { border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.3); }
+
+    /* Switch Toggles */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 8px;
+    }
+
+    .toggle-info h4 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .toggle-info p {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.2);
+      transition: .3s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Live Preview Box */
+    .preview-box {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 10px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .preview-pill {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      background: var(--bg-hover);
+    }
+
+    /* Sticky Bottom Action Bar */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-panel);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--border-color);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 100;
+    }
+
+    .toast {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      display: none;
+    }
+
+    .toast.success {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid #10b981;
+      color: #10b981;
+    }
+
+    .toast.error {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid #ef4444;
+      color: #ef4444;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-group">
+      <img id="headerLogo" src="fiscaglia-favicon.svg" alt="Station Logo" class="brand-logo">
+      <div class="brand-text">
+        <h1 id="headerStationTitle">Stazione ADS-B · Impostazioni</h1>
+        <p>ADSBItalia Station Edition · Control Panel</p>
+      </div>
+    </div>
+    <div class="nav-actions">
+      <a href="index.html" class="btn btn-secondary">‹ Torna al Radar</a>
+      <button id="btnSaveTop" class="btn btn-primary" onclick="saveConfiguration()">💾 Salva Modifiche</button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- SECTION 1: ANTENNA & STATION INFO -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2>📡 Antenna & Identità Stazione</h2>
+        <p>Personalizza il nome, le coordinate e i cerchi radar</p>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="stationName">Nome Stazione</label>
+          <input type="text" id="stationName" placeholder="Es. Stazione ADS-B di Roma">
+          <span class="hint">Mostrato nell'intestazione e nella scheda radar</span>
+        </div>
+
+        <div class="form-group">
+          <label for="stationSubtitle">Sottotitolo / Ricevitore</label>
+          <input type="text" id="stationSubtitle" placeholder="Es. RTL-SDR 1090 MHz">
+          <span class="hint">Breve descrizione del setup</span>
+        </div>
+
+        <div class="form-group">
+          <label for="stationWebsite">Sito Web / Link Feeder</label>
+          <input type="text" id="stationWebsite" placeholder="https://adsbitalia.it">
+          <span class="hint">Aperto al click sul logo della stazione</span>
+        </div>
+
+        <div class="form-group">
+          <label for="stationLogo">Logo / Stemma Stazione (URL o File)</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="stationLogo" placeholder="images/custom-logo.png" style="flex: 1;">
+            <label class="btn btn-secondary" style="margin: 0; padding: 10px 14px; cursor: pointer;">
+              📁 Carica
+              <input type="file" id="logoUploadInput" accept="image/*" style="display: none;" onchange="uploadLogoFile(this)">
+            </label>
+          </div>
+          <span class="hint">Carica una PNG/SVG o incolla l'URL</span>
+        </div>
+
+        <div class="form-group">
+          <label for="stationLat">Latitudine Antenna (°N)</label>
+          <input type="number" id="stationLat" step="0.000001" placeholder="44.769651" onchange="updatePickerMarker()">
+        </div>
+
+        <div class="form-group">
+          <label for="stationLon">Longitudine Antenna (°E)</label>
+          <input type="number" id="stationLon" step="0.000001" placeholder="11.930735" onchange="updatePickerMarker()">
+        </div>
+
+        <div class="form-group">
+          <label for="stationAlt">Altitudine Antenna (Metri s.l.m.)</label>
+          <input type="number" id="stationAlt" step="1" placeholder="15">
+        </div>
+
+        <div class="form-group">
+          <label for="rangeRings">Cerchi di Portata (Range Rings in NM)</label>
+          <input type="text" id="rangeRings" placeholder="25, 50, 100, 150, 200, 250">
+          <span class="hint">Valori in miglia nautiche separati da virgola</span>
+        </div>
+
+        <div class="form-group full-width">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label>📍 Mappa Interattiva Coordinate</label>
+            <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="locateUserGps()">🎯 Usa la mia posizione GPS</button>
+          </div>
+          <div id="pickerMap"></div>
+          <span class="hint">Clicca o trascina il cursore sulla mappa per posizionare l'antenna</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: THEMES & COLORS -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2>🎨 Temi & Personalizzazione Colori</h2>
+        <p>Scegli un preset avionico o personalizza i colori del radar</p>
+      </div>
+
+      <div class="presets-grid">
+        <div class="preset-card active" onclick="applyThemePreset('cyan')">
+          <div class="color-dot" style="background: #38bdf8;"></div>
+          <div class="preset-name">Avionics Cyan</div>
+        </div>
+        <div class="preset-card" onclick="applyThemePreset('emerald')">
+          <div class="color-dot" style="background: #10b981;"></div>
+          <div class="preset-name">Radar Emerald</div>
+        </div>
+        <div class="preset-card" onclick="applyThemePreset('amber')">
+          <div class="color-dot" style="background: #f59e0b;"></div>
+          <div class="preset-name">Amber Glow</div>
+        </div>
+        <div class="preset-card" onclick="applyThemePreset('purple')">
+          <div class="color-dot" style="background: #a855f7;"></div>
+          <div class="preset-name">Stealth Night</div>
+        </div>
+        <div class="preset-card" onclick="applyThemePreset('monochrome')">
+          <div class="color-dot" style="background: #e2e8f0;"></div>
+          <div class="preset-name">Arctic Mono</div>
+        </div>
+        <div class="preset-card" onclick="applyThemePreset('crimson')">
+          <div class="color-dot" style="background: #ef4444;"></div>
+          <div class="preset-name">Tactical Red</div>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Colore Primario / Accent</label>
+          <div class="color-picker-row">
+            <input type="color" id="primaryColorPicker" value="#38bdf8" oninput="onColorChange()">
+            <input type="text" id="primaryColorText" value="#38bdf8" onchange="onColorTextChange()">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Colore Cerchi Radar (Range Rings)</label>
+          <div class="color-picker-row">
+            <input type="color" id="ringColorPicker" value="#38bdf8" oninput="onColorChange()">
+            <input type="text" id="ringColorText" value="#38bdf8" onchange="onColorTextChange()">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Opacità Cerchi Radar (0.1 - 1.0)</label>
+          <input type="number" id="ringOpacity" step="0.05" min="0.1" max="1.0" value="0.45">
+        </div>
+
+        <div class="form-group full-width">
+          <label>Anteprima Stile in Tempo Reale</label>
+          <div class="preview-box" id="themePreviewBox">
+            <span class="preview-pill" id="prevPill1">📡 42 Aerei Ricevuti</span>
+            <span class="preview-pill" id="prevPill2">⚔️ 3 Militari</span>
+            <span class="preview-pill" id="prevPill3">⚠️ 7700 Emergenza</span>
+            <button class="btn btn-primary" id="prevBtn" style="pointer-events: none;">Pulsante Attivo</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: FEATURES & PHOTO ENGINE -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2>📸 Motore Foto & Funzionalità</h2>
+        <p>Gestisci il caricamento delle foto reali, meteo e deviazioni</p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <h4>📸 Motore Foto Aeromobili in Tempo Reale</h4>
+            <p>Mostra la fotografia reale ad alta risoluzione del velivolo cliccato (Planespotters.net / ADSBItalia Proxy)</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="enablePhotos" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <h4>🌧️ Radar Meteo Pioggia & Precipitazioni</h4>
+            <p>Abilita il layer radar precipitazioni in tempo reale sovrapposto alla mappa</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="enableWeather" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <h4>☁️ Copertura Nuvole Satellitari NASA GIBS</h4>
+            <p>Livello satellitare globale per visualizzare la copertura nuvolosa</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="enableClouds" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <h4>⚠️ Rilevamento Deviazioni di Volo (Flight Diversions)</h4>
+            <p>Mostra banner di allerta e destinazione alternativa quando un aereo dirotta su un altro aeroporto</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="enableDiversions" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <h4>⚔️ Filtri e Badge Tattici (Militari, Soccorso 118, Polizia)</h4>
+            <p>Database hex speciali per evidenziare traffico di stato, forze armate e antincendio</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="enableMilitary" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: DATA SOURCE -->
+    <section class="section-card">
+      <div class="section-header">
+        <h2>🔌 Sorgente Dati ADS-B</h2>
+        <p>Configura il collegamento al demotulatore locale o remoto</p>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="aircraftUrl">URL Sorgente aircraft.json</label>
+          <input type="text" id="aircraftUrl" placeholder="http://127.0.0.1/data/aircraft.json">
+          <span class="hint">Percorso readsb, dump1090-fa o ultrafeeder (es. /tar1090/data/aircraft.json)</span>
+        </div>
+
+        <div class="form-group">
+          <label for="pollInterval">Intervallo di Aggiornamento (ms)</label>
+          <input type="number" id="pollInterval" step="100" min="500" max="10000" value="1000">
+          <span class="hint">1000 ms = 1 secondo (consigliato 1000-2000 ms)</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM FIXED ACTION BAR -->
+  <div class="bottom-bar">
+    <div id="toastMessage" class="toast"></div>
+    <div style="display: flex; gap: 12px; margin-left: auto;">
+      <a href="index.html" class="btn btn-secondary">🚀 Apri Radar Live</a>
+      <button class="btn btn-primary" onclick="saveConfiguration()">💾 Salva Tutte le Impostazioni</button>
+    </div>
+  </div>
+
+  <script>
+    let map, marker;
+    let currentConfig = {};
+
+    const THEME_PRESETS = {
+      cyan: {
+        primary: '#38bdf8',
+        bgDark: '#050c14',
+        bgPanel: 'rgba(7, 23, 36, 0.94)',
+        bgCard: 'rgba(11, 34, 52, 0.96)',
+        border: 'rgba(56, 189, 248, 0.22)',
+        glow: 'rgba(56, 189, 248, 0.45)'
+      },
+      emerald: {
+        primary: '#10b981',
+        bgDark: '#03140d',
+        bgPanel: 'rgba(4, 30, 20, 0.94)',
+        bgCard: 'rgba(7, 44, 29, 0.96)',
+        border: 'rgba(16, 185, 129, 0.25)',
+        glow: 'rgba(16, 185, 129, 0.45)'
+      },
+      amber: {
+        primary: '#f59e0b',
+        bgDark: '#140c03',
+        bgPanel: 'rgba(32, 19, 5, 0.94)',
+        bgCard: 'rgba(46, 27, 7, 0.96)',
+        border: 'rgba(245, 158, 11, 0.25)',
+        glow: 'rgba(245, 158, 11, 0.45)'
+      },
+      purple: {
+        primary: '#a855f7',
+        bgDark: '#0d0514',
+        bgPanel: 'rgba(25, 8, 38, 0.94)',
+        bgCard: 'rgba(38, 13, 58, 0.96)',
+        border: 'rgba(168, 85, 247, 0.25)',
+        glow: 'rgba(168, 85, 247, 0.45)'
+      },
+      monochrome: {
+        primary: '#e2e8f0',
+        bgDark: '#0b0f19',
+        bgPanel: 'rgba(20, 27, 41, 0.94)',
+        bgCard: 'rgba(30, 41, 59, 0.96)',
+        border: 'rgba(226, 232, 240, 0.25)',
+        glow: 'rgba(226, 232, 240, 0.35)'
+      },
+      crimson: {
+        primary: '#ef4444',
+        bgDark: '#140505',
+        bgPanel: 'rgba(35, 8, 8, 0.94)',
+        bgCard: 'rgba(55, 12, 12, 0.96)',
+        border: 'rgba(239, 68, 68, 0.25)',
+        glow: 'rgba(239, 68, 68, 0.45)'
+      }
+    };
+
+    async function loadConfiguration() {
+      try {
+        const res = await fetch('/api/config');
+        if (res.ok) {
+          currentConfig = await res.json();
+          populateFields(currentConfig);
+        }
+      } catch (err) {
+        console.warn('Could not load from /api/config, loading defaults', err);
+      }
+    }
+
+    function populateFields(cfg) {
+      const st = cfg.station || {};
+      const src = cfg.source || {};
+      const th = cfg.theme || {};
+      const feat = cfg.features || {};
+
+      document.getElementById('stationName').value = st.name || '';
+      document.getElementById('stationSubtitle').value = st.subtitle || '';
+      document.getElementById('stationWebsite').value = st.website_url || '';
+      document.getElementById('stationLogo').value = st.logo_url || '';
+      document.getElementById('stationLat').value = st.lat != null ? st.lat : 44.769651;
+      document.getElementById('stationLon').value = st.lon != null ? st.lon : 11.930735;
+      document.getElementById('stationAlt').value = st.alt_m != null ? st.alt_m : 15;
+      document.getElementById('rangeRings').value = (st.range_rings || [25, 50, 100, 150, 200, 250]).join(', ');
+
+      document.getElementById('aircraftUrl').value = src.aircraft_url || 'http://127.0.0.1/data/aircraft.json';
+      document.getElementById('pollInterval').value = src.poll_interval_ms || 1000;
+
+      // Theme
+      const primary = th.primary_color || '#38bdf8';
+      document.getElementById('primaryColorPicker').value = primary;
+      document.getElementById('primaryColorText').value = primary;
+      document.getElementById('ringColorPicker').value = st.ring_color || primary;
+      document.getElementById('ringColorText').value = st.ring_color || primary;
+      document.getElementById('ringOpacity').value = st.ring_opacity || 0.45;
+
+      // Features
+      document.getElementById('enablePhotos').checked = feat.enable_photos !== false;
+      document.getElementById('enableWeather').checked = feat.enable_weather_radar !== false;
+      document.getElementById('enableClouds').checked = feat.enable_clouds !== false;
+      document.getElementById('enableDiversions').checked = feat.enable_diversions !== false;
+      document.getElementById('enableMilitary').checked = feat.enable_military_filter !== false;
+
+      // Update header logo & title
+      if (st.name) document.getElementById('headerStationTitle').textContent = `${st.name} · Impostazioni`;
+      if (st.logo_url) document.getElementById('headerLogo').src = st.logo_url;
+
+      applyLiveTheme(primary);
+      initMap(st.lat || 44.769651, st.lon || 11.930735);
+    }
+
+    function initMap(lat, lon) {
+      if (map) return;
+      map = L.map('pickerMap').setView([lat, lon], 9);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+      }).addTo(map);
+
+      marker = L.marker([lat, lon], { draggable: true }).addTo(map);
+
+      marker.on('dragend', function (e) {
+        const pos = marker.getLatLng();
+        document.getElementById('stationLat').value = pos.lat.toFixed(6);
+        document.getElementById('stationLon').value = pos.lng.toFixed(6);
+      });
+
+      map.on('click', function (e) {
+        marker.setLatLng(e.latlng);
+        document.getElementById('stationLat').value = e.latlng.lat.toFixed(6);
+        document.getElementById('stationLon').value = e.latlng.lng.toFixed(6);
+      });
+    }
+
+    function updatePickerMarker() {
+      const lat = parseFloat(document.getElementById('stationLat').value);
+      const lon = parseFloat(document.getElementById('stationLon').value);
+      if (!isNaN(lat) && !isNaN(lon) && marker && map) {
+        marker.setLatLng([lat, lon]);
+        map.setView([lat, lon], map.getZoom());
+      }
+    }
+
+    function locateUserGps() {
+      if (!navigator.geolocation) {
+        alert('Geolocalizzazione non supportata dal tuo browser');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          document.getElementById('stationLat').value = lat.toFixed(6);
+          document.getElementById('stationLon').value = lon.toFixed(6);
+          updatePickerMarker();
+        },
+        (err) => {
+          alert('Impossibile ottenere la posizione GPS: ' + err.message);
+        }
+      );
+    }
+
+    function applyThemePreset(key) {
+      const p = THEME_PRESETS[key];
+      if (!p) return;
+
+      document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      document.getElementById('primaryColorPicker').value = p.primary;
+      document.getElementById('primaryColorText').value = p.primary;
+      document.getElementById('ringColorPicker').value = p.primary;
+      document.getElementById('ringColorText').value = p.primary;
+
+      applyLiveTheme(p.primary);
+    }
+
+    function onColorChange() {
+      const val = document.getElementById('primaryColorPicker').value;
+      document.getElementById('primaryColorText').value = val;
+      applyLiveTheme(val);
+    }
+
+    function onColorTextChange() {
+      const val = document.getElementById('primaryColorText').value;
+      document.getElementById('primaryColorPicker').value = val;
+      applyLiveTheme(val);
+    }
+
+    function applyLiveTheme(primaryColor) {
+      document.documentElement.style.setProperty('--accent', primaryColor);
+      document.documentElement.style.setProperty('--accent-glow', primaryColor + '66');
+      document.documentElement.style.setProperty('--border-highlight', primaryColor + 'aa');
+      document.documentElement.style.setProperty('--bg-hover', primaryColor + '1f');
+
+      // Update preview elements
+      const prevPill1 = document.getElementById('prevPill1');
+      if (prevPill1) {
+        prevPill1.style.borderColor = primaryColor;
+        prevPill1.style.color = primaryColor;
+      }
+      const prevBtn = document.getElementById('prevBtn');
+      if (prevBtn) {
+        prevBtn.style.backgroundColor = primaryColor;
+        prevBtn.style.boxShadow = `0 0 16px ${primaryColor}66`;
+      }
+    }
+
+    async function uploadLogoFile(input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      const formData = new FormData();
+      formData.append('logo', file);
+
+      showToast('Caricamento logo in corso...', 'success');
+      try {
+        const res = await fetch('/api/upload-logo', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.ok) {
+          document.getElementById('stationLogo').value = data.logo_url;
+          document.getElementById('headerLogo').src = data.logo_url;
+          showToast('Logo caricato con successo!', 'success');
+        } else {
+          showToast('Errore caricamento logo: ' + data.error, 'error');
+        }
+      } catch (err) {
+        showToast('Errore di rete durante upload', 'error');
+      }
+    }
+
+    async function saveConfiguration() {
+      const rawRings = document.getElementById('rangeRings').value;
+      const ringsArray = rawRings.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+
+      const payload = {
+        station: {
+          name: document.getElementById('stationName').value.trim() || 'Stazione ADS-B',
+          subtitle: document.getElementById('stationSubtitle').value.trim(),
+          website_url: document.getElementById('stationWebsite').value.trim(),
+          logo_url: document.getElementById('stationLogo').value.trim(),
+          lat: parseFloat(document.getElementById('stationLat').value) || 44.769651,
+          lon: parseFloat(document.getElementById('stationLon').value) || 11.930735,
+          alt_m: parseInt(document.getElementById('stationAlt').value) || 15,
+          range_rings: ringsArray.length > 0 ? ringsArray : [25, 50, 100, 150, 200, 250],
+          ring_color: document.getElementById('ringColorPicker').value,
+          ring_opacity: parseFloat(document.getElementById('ringOpacity').value) || 0.45
+        },
+        source: {
+          aircraft_url: document.getElementById('aircraftUrl').value.trim(),
+          poll_interval_ms: parseInt(document.getElementById('pollInterval').value) || 1000,
+          use_proxy: true
+        },
+        theme: {
+          primary_color: document.getElementById('primaryColorPicker').value,
+          accent_glow: document.getElementById('primaryColorPicker').value + '66'
+        },
+        features: {
+          enable_photos: document.getElementById('enablePhotos').checked,
+          enable_weather_radar: document.getElementById('enableWeather').checked,
+          enable_clouds: document.getElementById('enableClouds').checked,
+          enable_diversions: document.getElementById('enableDiversions').checked,
+          enable_military_filter: document.getElementById('enableMilitary').checked
+        }
+      };
+
+      try {
+        const res = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (result.ok) {
+          showToast('✅ Tutte le impostazioni sono state salvate con successo!', 'success');
+        } else {
+          showToast('❌ Errore durante il salvataggio: ' + result.error, 'error');
+        }
+      } catch (err) {
+        showToast('❌ Errore di connessione con il server', 'error');
+      }
+    }
+
+    function showToast(msg, type) {
+      const toast = document.getElementById('toastMessage');
+      toast.textContent = msg;
+      toast.className = `toast ${type}`;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 4500);
+    }
+
+    window.addEventListener('DOMContentLoaded', loadConfiguration);
+  </script>
+</body>
+</html>

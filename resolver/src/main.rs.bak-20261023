@@ -1,0 +1,671 @@
+mod image_engine;
+mod online_discovery;
+mod svg_engine;
+
+use std::collections::{HashMap, HashSet};
+use std::fs;
+use std::path::Path;
+use std::sync::Arc;
+use std::time::{Duration, SystemTime};
+
+use regex::Regex;
+use rusqlite::{Connection, OpenFlags};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use tokio::sync::Mutex;
+
+const READSB_JSON: &str = "/run/readsb/aircraft.json";
+const BANNER_DIR: &str = "/usr/local/share/tar1090/html/images/airline-banners";
+const INDEX_PATH: &str = "/usr/local/share/tar1090/html/images/airline-banners/operator-banner-index.json";
+const SQLITE_PATH: &str = "/var/lib/adsbitalia/aircraft_owners.sqlite3";
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+struct MasterIndex {
+    #[serde(default)]
+    by_hex: serde_json::Map<String, Value>,
+    #[serde(default)]
+    by_registration: serde_json::Map<String, Value>,
+    #[serde(default)]
+    by_operator: serde_json::Map<String, Value>,
+    #[serde(default)]
+    by_icao: serde_json::Map<String, Value>,
+    #[serde(default)]
+    ignored_hexes: Vec<String>,
+    #[serde(default)]
+    ignored_operators: Vec<String>,
+}
+
+struct Matchers {
+    re_slug: Regex,
+    re_trim: Regex,
+    re_skip_op: Regex,
+    re_mil_op: Regex,
+    re_finanza: Regex,
+    re_hems_op: Regex,
+    re_polizia_op: Regex,
+    re_carabinieri_op: Regex,
+    re_vvf_op: Regex,
+    re_costiera_op: Regex,
+    re_esercito_op: Regex,
+    re_marina_op: Regex,
+    re_bpo_op: Regex,
+    re_adac_op: Regex,
+    re_drf_op: Regex,
+    re_bbk_op: Regex,
+    re_polisen_op: Regex,
+}
+
+impl Matchers {
+    fn new() -> Self {
+        Self {
+            re_slug: Regex::new(r"[^a-z0-9]+").unwrap(),
+            re_trim: Regex::new(r"^-+|-+$").unwrap(),
+            re_skip_op: Regex::new(r"(?i)^(bank|wells|trust|holding|leasing|unknown|private|n/a)").unwrap(),
+            re_mil_op: Regex::new(r"(?i)Aeronautica Militare|Italian Air Force").unwrap(),
+            re_finanza: Regex::new(r"(?i)Guardia di Finanza|Finanza").unwrap(),
+            re_hems_op: Regex::new(r"(?i)Avincis|Inaer|Babcock|Elisoccorso|HEMS|Pegaso").unwrap(),
+            re_polizia_op: Regex::new(r"(?i)Polizia di Stato|Polizia").unwrap(),
+            re_carabinieri_op: Regex::new(r"(?i)Carabinieri").unwrap(),
+            re_vvf_op: Regex::new(r"(?i)Vigili del Fuoco|Antincendio").unwrap(),
+            re_costiera_op: Regex::new(r"(?i)Guardia Costiera|Capitaneria").unwrap(),
+            re_esercito_op: Regex::new(r"(?i)Esercito Italiano|Italian Army").unwrap(),
+            re_marina_op: Regex::new(r"(?i)Marina Militare|Italian Navy").unwrap(),
+            re_bpo_op: Regex::new(r"(?i)Bundespolizei|Federal Police|BPO").unwrap(),
+            re_adac_op: Regex::new(r"(?i)\bADAC\b|Allgemeiner Deutscher Automobil-Club").unwrap(),
+            re_drf_op: Regex::new(r"(?i)DRF|Deutsche Rettungsflugwacht").unwrap(),
+            re_bbk_op: Regex::new(r"(?i)BBK|Zivilschutz|Katastrophenhilfe").unwrap(),
+            re_polisen_op: Regex::new(r"(?i)Polisen|Polisflyget|Swedish Police").unwrap(),
+        }
+    }
+
+    fn clean_slug(&self, s: &str) -> String {
+        let lower = s.to_lowercase();
+        let replaced = self.re_slug.replace_all(&lower, "-");
+        self.re_trim.replace_all(&replaced, "").to_string()
+    }
+}
+
+fn load_available_banners() -> (HashSet<String>, HashMap<String, String>) {
+    let mut exact_files = HashSet::new();
+    let mut lower_map = HashMap::new();
+    if let Ok(entries) = fs::read_dir(BANNER_DIR) {
+        for entry in entries.flatten() {
+            if let Ok(ft) = entry.file_type() {
+                if ft.is_file() || ft.is_symlink() {
+                    let name = entry.file_name().to_string_lossy().to_string();
+                    if name.ends_with(".png") {
+                        exact_files.insert(name.clone());
+                        lower_map.insert(name.to_lowercase(), name);
+                    }
+                }
+            }
+        }
+    }
+    (exact_files, lower_map)
+}
+
+fn lookup_owner_by_hex(conn: &Connection, target_hex: &str) -> Option<String> {
+    let mut stmt = conn.prepare_cached("SELECT owner FROM aircraft_owners WHERE hex = ?1 LIMIT 1").ok()?;
+    let mut rows = stmt.query([target_hex]).ok()?;
+    if let Some(row) = rows.next().ok()? {
+        let owner: String = row.get(0).unwrap_or_default();
+        if !owner.trim().is_empty() {
+            return Some(owner.trim().to_string());
+        }
+    }
+    None
+}
+
+/// Helper: returns a valid banner filename if the index entry has one.
+fn get_mapped_banner(val: Option<&Value>) -> Option<String> {
+    let v = val?;
+    if let Some(s) = v.as_str() {
+        let trimmed = s.trim();
+        if !trimmed.is_empty() {
+            return Some(trimmed.to_string());
+        }
+    }
+    if let Some(obj) = v.as_object() {
+        if let Some(fn_val) = obj.get("filename").and_then(|f| f.as_str()) {
+            let trimmed = fn_val.trim();
+            if !trimmed.is_empty() {
+                return Some(trimmed.to_string());
+            }
+        }
+        if let Some(fn_val) = obj.get("banner_file").and_then(|f| f.as_str()) {
+            let trimmed = fn_val.trim();
+            if !trimmed.is_empty() {
+                return Some(trimmed.to_string());
+            }
+        }
+        if let Some(icao_val) = obj.get("banner_icao").and_then(|i| i.as_str()) {
+            let trimmed = icao_val.trim();
+            if !trimmed.is_empty() {
+                return Some(format!("{}.png", trimmed));
+            }
+        }
+    }
+    None
+}
+
+/// PURE HEX RESOLUTION: Determines banner ONLY from the HEX address and its verified owner.
+/// ZERO callsign checking. ZERO registration checking.
+fn determine_banner(
+    hex: &str,
+    owner: &str,
+    banners: &HashSet<String>,
+    banners_lower: &HashMap<String, String>,
+    m: &Matchers,
+) -> Option<String> {
+    let eff_op_clean = owner.trim();
+    let op_upper = eff_op_clean.to_uppercase();
+
+    // 0. Italian Military Mode-S Block (33F... / 33E...)
+    if hex.starts_with("33F") || hex.starts_with("33E") {
+        if op_upper.contains("ESERCITO") {
+            if banners.contains("IEI.png") { return Some("IEI.png".to_string()); }
+            if banners.contains("esercito-italiano.png") { return Some("esercito-italiano.png".to_string()); }
+        } else if op_upper.contains("MARINA") {
+            if banners.contains("marina-militare.png") { return Some("marina-militare.png".to_string()); }
+        } else if op_upper.contains("CARABINIERI") {
+            if banners.contains("carabinieri.png") { return Some("carabinieri.png".to_string()); }
+        } else if op_upper.contains("GUARDIA DI FINANZA") || op_upper.contains("FINANZA") {
+            if banners.contains("guardia-di-finanza.png") { return Some("guardia-di-finanza.png".to_string()); }
+        }
+        if banners.contains("aeronautica-militare.png") {
+            return Some("aeronautica-militare.png".to_string());
+        }
+    }
+
+    if eff_op_clean.is_empty() {
+        return None;
+    }
+
+    // 1. Institutional / State Fleets by verified aircraft owner
+    if m.re_polizia_op.is_match(eff_op_clean) {
+        if banners.contains("polizia-di-stato.png") { return Some("polizia-di-stato.png".to_string()); }
+    }
+    if m.re_carabinieri_op.is_match(eff_op_clean) {
+        if banners.contains("carabinieri.png") { return Some("carabinieri.png".to_string()); }
+    }
+    if m.re_finanza.is_match(eff_op_clean) {
+        if banners.contains("guardia-di-finanza.png") { return Some("guardia-di-finanza.png".to_string()); }
+    }
+    if m.re_vvf_op.is_match(eff_op_clean) {
+        if banners.contains("vigili-del-fuoco.png") { return Some("vigili-del-fuoco.png".to_string()); }
+    }
+    if m.re_costiera_op.is_match(eff_op_clean) {
+        if banners.contains("guardia-costiera.png") { return Some("guardia-costiera.png".to_string()); }
+    }
+    if m.re_esercito_op.is_match(eff_op_clean) {
+        if banners.contains("IEI.png") { return Some("IEI.png".to_string()); }
+        if banners.contains("esercito-italiano.png") { return Some("esercito-italiano.png".to_string()); }
+    }
+    if m.re_marina_op.is_match(eff_op_clean) {
+        if banners.contains("marina-militare.png") { return Some("marina-militare.png".to_string()); }
+    }
+    if m.re_mil_op.is_match(eff_op_clean) {
+        if banners.contains("aeronautica-militare.png") { return Some("aeronautica-militare.png".to_string()); }
+    }
+    if m.re_hems_op.is_match(eff_op_clean) {
+        if banners.contains("avincis.png") { return Some("avincis.png".to_string()); }
+        if banners.contains("elisoccorso-118.png") { return Some("elisoccorso-118.png".to_string()); }
+    }
+    if m.re_bpo_op.is_match(eff_op_clean) {
+        if banners.contains("bundespolizei.png") { return Some("bundespolizei.png".to_string()); }
+        if banners.contains("BPO.png") { return Some("BPO.png".to_string()); }
+    }
+    if m.re_adac_op.is_match(eff_op_clean) {
+        if banners.contains("adac-luftrettung.png") { return Some("adac-luftrettung.png".to_string()); }
+        if banners.contains("adac.png") { return Some("adac.png".to_string()); }
+    }
+    if m.re_drf_op.is_match(eff_op_clean) {
+        if banners.contains("drf-luftrettung.png") { return Some("drf-luftrettung.png".to_string()); }
+        if banners.contains("drf.png") { return Some("drf.png".to_string()); }
+    }
+    if m.re_bbk_op.is_match(eff_op_clean) {
+        if banners.contains("bundesamt-fur-bevolkerungsschutz-und-katastrophenhilfe.png") {
+            return Some("bundesamt-fur-bevolkerungsschutz-und-katastrophenhilfe.png".to_string());
+        }
+    }
+    if m.re_polisen_op.is_match(eff_op_clean) {
+        if banners.contains("POL.png") { return Some("POL.png".to_string()); }
+    }
+
+    // 2. Air Ambulances / Rescue by verified aircraft owner
+    if op_upper.contains("ANWB") || op_upper.contains("MEDICAL AIR ASSISTANCE") {
+        if banners.contains("anwb-medical-air-assistance.png") { return Some("anwb-medical-air-assistance.png".to_string()); }
+        if banners.contains("anwb.png") { return Some("anwb.png".to_string()); }
+    }
+    if op_upper.contains("EAST ANGLIAN AIR AMBULANCE") {
+        if banners.contains("east-anglian-air-ambulance.png") { return Some("east-anglian-air-ambulance.png".to_string()); }
+    }
+    if op_upper.contains("WALES AIR AMBULANCE") || op_upper.contains("WELSH AIR AMBULANCE") {
+        if banners.contains("wales-air-ambulance.png") { return Some("wales-air-ambulance.png".to_string()); }
+    }
+    if op_upper.contains("REGA") || op_upper.contains("SWISS AIR RESCUE") {
+        if banners.contains("swiss-air-rescue-rega.png") { return Some("swiss-air-rescue-rega.png".to_string()); }
+        if banners.contains("rega.png") { return Some("rega.png".to_string()); }
+    }
+    if op_upper.contains("AP3") || op_upper.contains("ALPINE AIR AMBULANCE") {
+        if banners.contains("ap3-luftrettung.png") { return Some("ap3-luftrettung.png".to_string()); }
+        if banners.contains("alpine-air-ambulance.png") { return Some("alpine-air-ambulance.png".to_string()); }
+    }
+    if op_upper.contains("JOHANNITER") || op_upper.contains("HELI-FLIGHT") || op_upper.contains("HELI FLIGHT") {
+        if banners.contains("johanniter-luftrettung.png") { return Some("johanniter-luftrettung.png".to_string()); }
+        if banners.contains("johanniter.png") { return Some("johanniter.png".to_string()); }
+    }
+
+    // 3. Airline / Commercial Operator Name matching via owner slug
+    if eff_op_clean.len() > 2 {
+        let slug = m.clean_slug(eff_op_clean);
+        if !slug.is_empty() && !m.re_skip_op.is_match(&slug) {
+            let fname = format!("{}.png", slug);
+            if let Some(target) = banners_lower.get(&fname) {
+                return Some(target.clone());
+            }
+
+            let suffixes = [
+                "-inc", "-llc", "-ltd", "-limited", "-corp", "-corporation", "-co",
+                "-airlines", "-airline", "-airways", "-air", "-gmbh", "-ag", "-spa",
+                "-s-p-a", "-sa", "-s-a", "-ab", "-as", "-bv", "-b-v", "-nv", "-n-v",
+                "-oy", "-aero", "-aviation", "-air-taxi", "-taxi", "-services", "-service"
+            ];
+            let mut curr = slug.clone();
+            for _ in 0..3 {
+                let mut changed = false;
+                for sfx in &suffixes {
+                    if curr.ends_with(sfx) {
+                        curr = curr[..curr.len() - sfx.len()].trim_matches('-').to_string();
+                        changed = true;
+                        let cand_sfx = format!("{}.png", curr);
+                        if let Some(target) = banners_lower.get(&cand_sfx) {
+                            return Some(target.clone());
+                        }
+                    }
+                }
+                if !changed { break; }
+            }
+
+            if let Some(first_word) = slug.split('-').next() {
+                if first_word.len() >= 4 {
+                    let fw_file = format!("{}.png", first_word);
+                    if let Some(target) = banners_lower.get(&fw_file) {
+                        return Some(target.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// Resolve aircraft online STRICTLY and EXCLUSIVELY by Mode-S HEX.
+async fn handle_online_resolution(
+    client: reqwest::Client,
+    hex: String,
+    banners_lower: Arc<HashMap<String, String>>,
+    active_set: Arc<Mutex<HashSet<String>>>,
+    _failed_set: Arc<Mutex<HashMap<String, std::time::Instant>>>,
+) -> Option<String> {
+    let mut candidate_op = String::new();
+    let mut reg = String::new();
+
+    // Query online discovery strictly by HEX (Planespotters hex photo API, HexDB)
+    if let Some((discovered_op, discovered_reg)) = online_discovery::query_hex_operator(&client, &hex).await {
+        candidate_op = discovered_op;
+        reg = discovered_reg;
+        if let Ok(conn) = Connection::open(SQLITE_PATH) {
+            let _ = conn.execute(
+                "INSERT OR REPLACE INTO aircraft_owners (hex, registration, owner, type) VALUES (?1, ?2, ?3, COALESCE((SELECT type FROM aircraft_owners WHERE hex = ?1), ''))",
+                [&hex, &reg, &candidate_op],
+            );
+        }
+    }
+
+    let clean_candidate = candidate_op.trim();
+    if clean_candidate.len() <= 2 {
+        active_set.lock().await.remove(&hex);
+        return None;
+    }
+
+    // 1. Check local banners
+    let matchers = Matchers::new();
+    let mut matched_banner: Option<String> = None;
+
+    let slug = matchers.clean_slug(clean_candidate);
+    if !slug.is_empty() {
+        let fname = format!("{}.png", slug);
+        if let Some(target) = banners_lower.get(&fname) {
+            matched_banner = Some(target.clone());
+        } else {
+            let suffixes = [
+                "-inc", "-llc", "-ltd", "-limited", "-corp", "-corporation", "-co",
+                "-airlines", "-airline", "-airways", "-air", "-gmbh", "-ag", "-spa",
+                "-s-p-a", "-sa", "-s-a", "-ab", "-as", "-bv", "-b-v", "-nv", "-n-v",
+                "-oy", "-aero", "-aviation", "-air-taxi", "-taxi", "-services", "-service"
+            ];
+            let mut curr = slug.clone();
+            for _ in 0..3 {
+                let mut changed = false;
+                for sfx in &suffixes {
+                    if curr.ends_with(sfx) {
+                        curr = curr[..curr.len() - sfx.len()].trim_matches('-').to_string();
+                        changed = true;
+                        let cand_sfx = format!("{}.png", curr);
+                        if let Some(target) = banners_lower.get(&cand_sfx) {
+                            matched_banner = Some(target.clone());
+                            break;
+                        }
+                    }
+                }
+                if matched_banner.is_some() || !changed {
+                    break;
+                }
+            }
+            if matched_banner.is_none() {
+                if let Some(first_word) = slug.split('-').next() {
+                    if first_word.len() >= 4 {
+                        let fw_file = format!("{}.png", first_word);
+                        if let Some(target) = banners_lower.get(&fw_file) {
+                            matched_banner = Some(target.clone());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Check index by_operator
+    if matched_banner.is_none() {
+        if let Ok(data) = fs::read_to_string(INDEX_PATH) {
+            if let Ok(idx) = serde_json::from_str::<MasterIndex>(&data) {
+                if let Some(b) = get_mapped_banner(idx.by_operator.get(&clean_candidate.to_uppercase())) {
+                    matched_banner = Some(b);
+                }
+            }
+        }
+    }
+
+    let final_banner_filename = if let Some(local_b) = matched_banner {
+        eprintln!(
+            "[ADSBItalia Rust Resolver v3.0] Matched LOCAL banner for {}: {}",
+            clean_candidate, local_b
+        );
+        local_b
+    } else {
+        // 2. Not found locally -> Download & Render from Online
+        let banner_filename = format!("{}.png", slug);
+        let banner_path = Path::new(BANNER_DIR).join(&banner_filename);
+
+        if !banner_path.exists() {
+            eprintln!(
+                "[ADSBItalia Rust Resolver v3.0] No local banner for '{}'. Querying online Wikidata/Commons...",
+                clean_candidate
+            );
+            if let Some((logo_data, is_svg)) = online_discovery::resolve_operator_logo(&client, clean_candidate).await {
+                let img = if is_svg {
+                    svg_engine::render_svg_to_image(&logo_data, 800)
+                } else {
+                    image::load_from_memory(&logo_data).ok().map(|i| i.to_rgba8())
+                };
+
+                if let Some(rgba) = img {
+                    match image_engine::render_banner(&rgba, &banner_path) {
+                        Ok(true) => {
+                            eprintln!(
+                                "[ADSBItalia Rust Resolver v3.0] Verified & generated online banner: {} -> {}",
+                                clean_candidate, banner_filename
+                            );
+                        }
+                        Ok(false) => {
+                            eprintln!(
+                                "[ADSBItalia Rust Resolver v3.0] REJECTED low-quality/stamp logo for: {}",
+                                clean_candidate
+                            );
+                            active_set.lock().await.remove(&hex);
+                            return None;
+                        }
+                        Err(e) => {
+                            eprintln!("[ADSBItalia Rust Resolver] Error saving banner: {}", e);
+                            active_set.lock().await.remove(&hex);
+                            return None;
+                        }
+                    }
+                } else {
+                    active_set.lock().await.remove(&hex);
+                    return None;
+                }
+            } else {
+                eprintln!(
+                    "[ADSBItalia Rust Resolver v3.0] No online logo found for {}",
+                    clean_candidate
+                );
+                active_set.lock().await.remove(&hex);
+                return None;
+            }
+        }
+        banner_filename
+    };
+
+    // Store strictly in by_hex
+    let full_path = Path::new(BANNER_DIR).join(&final_banner_filename);
+    if full_path.exists() {
+        if let Ok(data) = fs::read_to_string(INDEX_PATH) {
+            if let Ok(mut idx) = serde_json::from_str::<MasterIndex>(&data) {
+                idx.by_hex.insert(hex.clone(), Value::String(final_banner_filename.clone()));
+                idx.by_operator.insert(clean_candidate.to_uppercase(), Value::String(final_banner_filename.clone()));
+
+                if let Ok(updated_json) = serde_json::to_string_pretty(&idx) {
+                    let _ = fs::write(INDEX_PATH, updated_json);
+                }
+            }
+        }
+    }
+
+    active_set.lock().await.remove(&hex);
+    Some(final_banner_filename)
+}
+
+#[tokio::main]
+async fn main() {
+    let args: Vec<String> = std::env::args().collect();
+
+    // CLI mode: resolve STRICTLY BY HEX
+    // Usage: adsbitalia-resolver --resolve <HEX>
+    if args.len() > 1 && (args[1] == "--resolve" || !args[1].starts_with('-')) {
+        let offset = if args[1] == "--resolve" { 2 } else { 1 };
+        let hex = args.get(offset).cloned().unwrap_or_default().trim().to_uppercase();
+
+        if hex.len() != 6 {
+            println!("RESULT:None");
+            return;
+        }
+
+        // 1. Check index by_hex directly
+        if let Ok(data) = fs::read_to_string(INDEX_PATH) {
+            if let Ok(idx) = serde_json::from_str::<MasterIndex>(&data) {
+                if let Some(b) = get_mapped_banner(idx.by_hex.get(&hex)) {
+                    println!("RESULT:{}", b);
+                    return;
+                }
+            }
+        }
+
+        let (banners, banners_lower) = load_available_banners();
+        let matchers = Matchers::new();
+        let conn = Connection::open_with_flags(SQLITE_PATH, OpenFlags::SQLITE_OPEN_READ_ONLY).ok();
+
+        // 2. Lookup owner by HEX in database
+        let mut owner = String::new();
+        if let Some(ref db) = conn {
+            if let Some(db_owner) = lookup_owner_by_hex(db, &hex) {
+                owner = db_owner;
+            }
+        }
+
+        // 3. Determine banner from hex and owner
+        if let Some(banner) = determine_banner(
+            &hex,
+            &owner,
+            &banners,
+            &banners_lower,
+            &matchers,
+        ) {
+            println!("RESULT:{}", banner);
+            return;
+        }
+
+        // 4. Online resolution strictly by HEX
+        let http_client = online_discovery::make_http_client();
+        let active_lookups = Arc::new(Mutex::new(HashSet::<String>::new()));
+        active_lookups.lock().await.insert(hex.clone());
+
+        let failed_dummy = Arc::new(Mutex::new(HashMap::new()));
+        if let Some(res) = handle_online_resolution(http_client, hex, Arc::new(banners_lower), active_lookups, failed_dummy).await {
+            println!("RESULT:{}", res);
+        } else {
+            println!("RESULT:None");
+        }
+        return;
+    }
+
+    eprintln!("Starting ADSBItalia Native 100% Rust Autonomous Logo Resolver (HEX-FIRST v4.0)...");
+
+    let matchers = Matchers::new();
+    let conn = Connection::open_with_flags(SQLITE_PATH, OpenFlags::SQLITE_OPEN_READ_ONLY).ok();
+    let http_client = online_discovery::make_http_client();
+    let active_lookups = Arc::new(Mutex::new(HashSet::<String>::new()));
+    let failed_lookups = Arc::new(Mutex::new(HashMap::<String, std::time::Instant>::new()));
+    let lookup_semaphore = Arc::new(tokio::sync::Semaphore::new(2));
+
+    let mut cached_index: Option<MasterIndex> = None;
+    let mut last_index_mtime: Option<SystemTime> = None;
+
+    let mut interval = tokio::time::interval(Duration::from_secs(30));
+    loop {
+        interval.tick().await;
+
+        if !Path::new(READSB_JSON).exists() || !Path::new(INDEX_PATH).exists() {
+            continue;
+        }
+
+        let (banners, banners_lower) = load_available_banners();
+        let shared_banners_lower = Arc::new(banners_lower.clone());
+        let mut queued_lookups = 0;
+
+        // Check if index needs reload
+        let current_mtime = fs::metadata(INDEX_PATH).and_then(|m| m.modified()).ok();
+        if cached_index.is_none() || current_mtime != last_index_mtime {
+            if let Ok(data) = fs::read_to_string(INDEX_PATH) {
+                if let Ok(idx) = serde_json::from_str::<MasterIndex>(&data) {
+                    cached_index = Some(idx);
+                    last_index_mtime = current_mtime;
+                }
+            }
+        }
+
+        let idx = match cached_index.as_mut() {
+            Some(i) => i,
+            None => continue,
+        };
+
+        let readsb_data = match fs::read_to_string(READSB_JSON) {
+            Ok(d) => d,
+            Err(_) => continue,
+        };
+
+        let v: Value = match serde_json::from_str(&readsb_data) {
+            Ok(val) => val,
+            Err(_) => continue,
+        };
+
+        let aircraft_list = match v.get("aircraft").and_then(|a| a.as_array()) {
+            Some(l) => l,
+            None => continue,
+        };
+
+        let mut newly_mapped = 0;
+
+        for ac in aircraft_list {
+            let hex = match ac.get("hex").and_then(|h| h.as_str()) {
+                Some(h) => h.trim().to_uppercase(),
+                None => continue,
+            };
+
+            if idx.ignored_hexes.contains(&hex) {
+                continue;
+            }
+
+            if get_mapped_banner(idx.by_hex.get(&hex)).is_some() {
+                continue;
+            }
+
+            // Lookup owner strictly by HEX
+            let mut owner = String::new();
+            if let Some(ref db) = conn {
+                if let Some(db_owner) = lookup_owner_by_hex(db, &hex) {
+                    owner = db_owner;
+                }
+            }
+
+            if let Some(banner_file) = determine_banner(
+                &hex,
+                &owner,
+                &banners,
+                &banners_lower,
+                &matchers,
+            ) {
+                idx.by_hex.insert(hex.clone(), Value::String(banner_file.clone()));
+                newly_mapped += 1;
+            } else {
+                // Not mapped locally: trigger throttled asynchronous Rust online resolution by HEX
+                if queued_lookups >= 1 {
+                    continue;
+                }
+
+                let mut failed_guard = failed_lookups.lock().await;
+                if let Some(fail_time) = failed_guard.get(&hex) {
+                    if fail_time.elapsed() < Duration::from_secs(86400) {
+                        continue;
+                    } else {
+                        failed_guard.remove(&hex);
+                    }
+                }
+                drop(failed_guard);
+
+                let mut set = active_lookups.lock().await;
+                if !set.contains(&hex) {
+                    set.insert(hex.clone());
+                    drop(set);
+                    queued_lookups += 1;
+
+                    let client = http_client.clone();
+                    let hex_c = hex.clone();
+                    let set_c = Arc::clone(&active_lookups);
+                    let failed_c = Arc::clone(&failed_lookups);
+                    let sem_c = Arc::clone(&lookup_semaphore);
+                    let banners_lower_c = Arc::clone(&shared_banners_lower);
+
+                    tokio::spawn(async move {
+                        let _permit = sem_c.acquire().await;
+                        let res = handle_online_resolution(client, hex_c.clone(), banners_lower_c, set_c, Arc::clone(&failed_c)).await;
+                        if res.is_none() {
+                            failed_c.lock().await.insert(hex_c, std::time::Instant::now());
+                        }
+                    });
+                }
+            }
+        }
+
+        if newly_mapped > 0 {
+            if let Ok(updated_json) = serde_json::to_string_pretty(&idx) {
+                if fs::write(INDEX_PATH, updated_json).is_ok() {
+                    last_index_mtime = fs::metadata(INDEX_PATH).and_then(|m| m.modified()).ok();
+                    eprintln!("[ADSBItalia Rust Resolver v4.0] Auto-resolved and mapped {} aircraft locally by HEX!", newly_mapped);
+                }
+            }
+        }
+    }
+}

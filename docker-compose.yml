@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  adsbitalia-station:
+    image: adsbitalia/station-radar:latest
+    build:
+      context: .
+      dockerFile: Dockerfile
+    container_name: adsbitalia-station-radar
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    volumes:
+      # Persistent configuration and custom uploaded logos
+      - ./config.json:/app/config.json
+      - ./custom_images:/app/web/images/custom
+      # Optional: if you run readsb/ultrafeeder on the same host, mount the data directory:
+      # - /run/readsb:/run/readsb:ro
+    environment:
+      - PORT=8088
+      - PYTHONUNBUFFERED=1

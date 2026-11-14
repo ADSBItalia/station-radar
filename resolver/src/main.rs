@@ -1,0 +1,875 @@
+use std::collections::{HashMap, HashSet};
+use std::fs;
+use std::path::Path;
+use std::sync::Arc;
+use std::time::{Duration, SystemTime};
+
+use regex::Regex;
+use rusqlite::{Connection, OpenFlags};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use tokio::sync::Mutex;
+
+mod icao_country;
+mod image_engine;
+mod online_discovery;
+mod svg_engine;
+
+const READSB_JSON: &str = "/run/readsb/aircraft.json";
+const BANNER_DIR: &str = "/usr/local/share/tar1090/html/images/airline-banners";
+const INDEX_PATH: &str = "/usr/local/share/tar1090/html/images/airline-banners/operator-banner-index.json";
+const SQLITE_PATH: &str = "/var/lib/adsbitalia/aircraft_owners.sqlite3";
+const INSTITUTIONAL_INDEX_PATH: &str = "/usr/local/share/tar1090/html/images/airline-banners/institutional-operator-index.json";
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+struct InstitutionalIndex {
+    #[serde(default)]
+    by_hex: HashMap<String, InstitutionalEntry>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+struct InstitutionalEntry {
+    #[serde(default)]
+    operator: Option<String>,
+    #[serde(default)]
+    operator_key: Option<String>,
+    #[serde(default)]
+    banner_icao: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+struct MasterIndex {
+    #[serde(default)]
+    by_hex: serde_json::Map<String, Value>,
+    #[serde(default)]
+    by_registration: serde_json::Map<String, Value>,
+    #[serde(default)]
+    by_operator: serde_json::Map<String, Value>,
+    #[serde(default)]
+    by_icao: serde_json::Map<String, Value>,
+    #[serde(default)]
+    ignored_hexes: Vec<String>,
+    #[serde(default)]
+    ignored_operators: Vec<String>,
+}
+
+struct Matchers {
+    re_slug: Regex,
+    re_trim: Regex,
+    re_skip_op: Regex,
+    re_commercial_callsign: Regex,
+}
+
+impl Matchers {
+    fn new() -> Self {
+        Self {
+            re_slug: Regex::new(r"[^a-z0-9]+").unwrap(),
+            re_trim: Regex::new(r"^-+|-+$").unwrap(),
+            re_skip_op: Regex::new(r"(?i)^(bank|wells|trust|holding|leasing|unknown|private|n/a)").unwrap(),
+            // Standard commercial callsign: 3 letters followed by 1 to 5 digits/letters (e.g. AZA123, RYR45K)
+            re_commercial_callsign: Regex::new(r"^[A-Z]{3}[0-9][A-Z0-9]{0,4}$").unwrap(),
+        }
+    }
+
+    fn clean_slug(&self, s: &str) -> String {
+        let lower = s.to_lowercase();
+        let replaced = self.re_slug.replace_all(&lower, "-");
+        self.re_trim.replace_all(&replaced, "").to_string()
+    }
+}
+
+fn load_available_banners() -> (HashSet<String>, HashMap<String, String>) {
+    let mut exact_files = HashSet::new();
+    let mut lower_map = HashMap::new();
+    if let Ok(entries) = fs::read_dir(BANNER_DIR) {
+        for entry in entries.flatten() {
+            if let Ok(ft) = entry.file_type() {
+                if ft.is_file() || ft.is_symlink() {
+                    let name = entry.file_name().to_string_lossy().to_string();
+                    if name.ends_with(".png") {
+                        exact_files.insert(name.clone());
+                        lower_map.insert(name.to_lowercase(), name);
+                    }
+                }
+            }
+        }
+    }
+    (exact_files, lower_map)
+}
+
+fn lookup_owner_by_hex(conn: &Connection, target_hex: &str) -> Option<String> {
+    let mut stmt = conn.prepare_cached("SELECT owner FROM aircraft_owners WHERE hex = ?1 LIMIT 1").ok()?;
+    let mut rows = stmt.query([target_hex]).ok()?;
+    if let Some(row) = rows.next().ok()? {
+        let owner: String = row.get(0).unwrap_or_default();
+        if !owner.trim().is_empty() {
+            return Some(owner.trim().to_string());
+        }
+    }
+    None
+}
+
+fn get_mapped_banner(val: Option<&Value>) -> Option<String> {
+    let v = val?;
+    if let Some(s) = v.as_str() {
+        let trimmed = s.trim();
+        if !trimmed.is_empty() {
+            return Some(trimmed.to_string());
+        }
+    }
+    if let Some(obj) = v.as_object() {
+        if let Some(fn_val) = obj.get("filename").and_then(|f| f.as_str()) {
+            let trimmed = fn_val.trim();
+            if !trimmed.is_empty() {
+                return Some(trimmed.to_string());
+            }
+        }
+        if let Some(fn_val) = obj.get("banner_file").and_then(|f| f.as_str()) {
+            let trimmed = fn_val.trim();
+            if !trimmed.is_empty() {
+                return Some(trimmed.to_string());
+            }
+        }
+        if let Some(icao_val) = obj.get("banner_icao").and_then(|i| i.as_str()) {
+            let trimmed = icao_val.trim();
+            if !trimmed.is_empty() {
+                return Some(format!("{}.png", trimmed));
+            }
+        }
+    }
+    None
+}
+
+/// Blacklist of generic words that look like 3-letter ICAO codes or test callsigns
+fn is_generic_callsign_word(pfx: &str) -> bool {
+    matches!(
+        pfx,
+        "TES" | "TEST" | "DEM" | "DEMO" | "RAD" | "RADIO" | "DEL" | "AIR" | "FLY"
+            | "SKY" | "ONE" | "VIP" | "JET" | "MED" | "DOC" | "FJP" | "ZZZ"
+    )
+}
+
+/// Sovereign-Aware Military & State Fleet Matcher.
+/// Guarantees that aircraft of Country A CAN NEVER receive a military banner of Country B.
+fn match_military_operator_sovereign(
+    hex: &str,
+    country_code: &str,
+    owner: &str,
+    callsign: &str,
+    reg: &str,
+    banners_lower: &HashMap<String, String>,
+) -> Option<String> {
+    let hex_u = hex.trim().to_uppercase();
+    let op_u = owner.trim().to_uppercase();
+    let call_u = callsign.trim().to_uppercase();
+    let reg_u = reg.trim().to_uppercase();
+    let cc = country_code.to_lowercase();
+
+    // 0. NATO: only true NATO flights (callsigns NATO/NAE/NAG/MMF, or registration starting with LX-N, or NATO owner)
+    let is_nato_hex = hex_u.starts_with("4D03C") || hex_u.starts_with("4D03D");
+    if call_u.starts_with("NATO") || call_u.starts_with("NAE") || call_u.starts_with("NAG") || call_u.starts_with("MMF") 
+       || reg_u.starts_with("LX-N") || op_u.contains("NATO") || op_u.contains("NAEW") 
+       || (is_nato_hex && (reg_u.is_empty() || reg_u.starts_with("LX-N"))) {
+        if let Some(b) = banners_lower.get("nato.png") {
+            return Some(b.clone());
+        }
+    }
+
+    // 1. Italy (Country Code "it", Mode-S block 300000 - 33FFFF)
+    if cc == "it" || hex_u.starts_with("30") || hex_u.starts_with("31") || hex_u.starts_with("32") || hex_u.starts_with("33") {
+        if op_u.contains("ESERCITO") || call_u.starts_with("IEI") {
+            if let Some(b) = banners_lower.get("italian-army.png").or_else(|| banners_lower.get("esercito-italiano.png")).or_else(|| banners_lower.get("iei.png")) {
+                return Some(b.clone());
+            }
+        }
+        if op_u.contains("MARINA") || call_u.starts_with("MMI") {
+            if let Some(b) = banners_lower.get("marina-militare.png") { return Some(b.clone()); }
+        }
+        if op_u.contains("CARABINIERI") || call_u.starts_with("CC") || call_u.starts_with("FIAMM") {
+            if let Some(b) = banners_lower.get("carabinieri.png") { return Some(b.clone()); }
+        }
+        if op_u.contains("GUARDIA DI FINANZA") || op_u.contains("FINANZA") || call_u.starts_with("GDI") {
+            if let Some(b) = banners_lower.get("guardia-di-finanza.png") { return Some(b.clone()); }
+        }
+        if op_u.contains("POLIZIA") {
+            if let Some(b) = banners_lower.get("polizia-di-stato.png") { return Some(b.clone()); }
+        }
+        if op_u.contains("VIGILI DEL FUOCO") || call_u.starts_with("DRAG") {
+            if let Some(b) = banners_lower.get("vigili-del-fuoco.png") { return Some(b.clone()); }
+        }
+        if op_u.contains("COSTIERA") || call_u.starts_with("CP") {
+            if let Some(b) = banners_lower.get("guardia-costiera.png") { return Some(b.clone()); }
+        }
+        // Default Italian State/Military
+        if hex_u.starts_with("33E") || hex_u.starts_with("33F") || hex_u.starts_with("3000") || call_u.starts_with("IAM") || op_u.contains("AERONAUTICA") {
+            if let Some(b) = banners_lower.get("italian-air-force.png").or_else(|| banners_lower.get("aeronautica-militare.png")) {
+                return Some(b.clone());
+            }
+        }
+        return None;
+    }
+
+    // 2. Jordan (Country Code "jo", Mode-S block 740000 - 747FFF)
+    if cc == "jo" || hex_u.starts_with("74") {
+        if let Some(b) = banners_lower.get("royal-jordanian-air-force.png").or_else(|| banners_lower.get("jordanian-air-force.png")) {
+            return Some(b.clone());
+        }
+        return None;
+    }
+
+    // 3. United States (Country Code "us", Mode-S block A00000 - AFFFFF)
+    if cc == "us" || hex_u.starts_with("A") {
+        if op_u.contains("AIR FORCE") || op_u.contains("USAF") || call_u.starts_with("RCH") || call_u.starts_with("REACH") || call_u.starts_with("FORTE") || call_u.starts_with("JAKE") || call_u.starts_with("DOOM") || call_u.starts_with("AF1") {
+            if let Some(b) = banners_lower.get("united-states-air-force.png").or_else(|| banners_lower.get("usaf.png")) {
+                return Some(b.clone());
+            }
+        }
+        if op_u.contains("ARMY") || call_u.starts_with("PAT") || call_u.starts_with("TITAN") || call_u.starts_with("CATS") || call_u.starts_with("USARMY") {
+            if let Some(b) = banners_lower.get("united-states-army.png").or_else(|| banners_lower.get("us-army.png")) {
+                return Some(b.clone());
+            }
+        }
+        if op_u.contains("NAVY") || call_u.starts_with("CNV") || call_u.starts_with("NAVY") {
+            if let Some(b) = banners_lower.get("united-states-navy.png").or_else(|| banners_lower.get("us-navy.png")) {
+                return Some(b.clone());
+            }
+        }
+        if op_u.contains("MARINE") || op_u.contains("USMC") || call_u.starts_with("RAIDR") || call_u.starts_with("HRCLS") {
+            if let Some(b) = banners_lower.get("united-states-marine-corps.png").or_else(|| banners_lower.get("usmc.png")) {
+                return Some(b.clone());
+            }
+        }
+        if op_u.contains("COAST GUARD") || op_u == "USCG" || call_u.starts_with("C2") || call_u.starts_with("CG") {
+            if let Some(b) = banners_lower.get("united-states-coast-guard.png").or_else(|| banners_lower.get("uscg.png")) {
+                return Some(b.clone());
+            }
+        }
+        // US Military block check (AE0000 - AFFFFF)
+        if hex_u.starts_with("AE") || hex_u.starts_with("AF") {
+            if let Some(b) = banners_lower.get("united-states-air-force.png") {
+                return Some(b.clone());
+            }
+        }
+        return None;
+    }
+
+    // 4. United Kingdom (Country Code "gb" / "uk", Mode-S block 400000 - 43FFFF)
+    if cc == "gb" || cc == "uk" || hex_u.starts_with("40") || hex_u.starts_with("41") || hex_u.starts_with("42") || hex_u.starts_with("43") {
+        if op_u.contains("POLICE") || call_u.starts_with("UKP") || reg_u.starts_with("G-POL") || reg_u.starts_with("G-MPS") {
+            if let Some(b) = banners_lower.get("national-police-air-service.png") { return Some(b.clone()); }
+        }
+        if op_u.contains("ROYAL AIR FORCE") || op_u == "RAF" || call_u.starts_with("RRR") || call_u.starts_with("RFR") || call_u.starts_with("SHF") || call_u.starts_with("TARTN") {
+            if let Some(b) = banners_lower.get("royal-air-force.png").or_else(|| banners_lower.get("raf.png")) {
+                return Some(b.clone());
+            }
+        }
+        if op_u.contains("ROYAL NAVY") || call_u.starts_with("NVY") {
+            if let Some(b) = banners_lower.get("royal-navy.png") { return Some(b.clone()); }
+        }
+        if op_u.contains("ARMY AIR CORPS") || op_u.contains("BRITISH ARMY") || call_u.starts_with("AAC") {
+            if let Some(b) = banners_lower.get("army-air-corps.png") { return Some(b.clone()); }
+        }
+        return None;
+    }
+
+    // 5. Australia (Country Code "au", Mode-S block 7C0000 - 7FFFFF)
+    if cc == "au" || hex_u.starts_with("7C") || hex_u.starts_with("7D") || hex_u.starts_with("7E") || hex_u.starts_with("7F") {
+        if op_u.contains("ARMY") || call_u.starts_with("JUST") || call_u.starts_with("TRPR") || reg_u.starts_with("A60-") || reg_u.starts_with("A47-") || reg_u.starts_with("A40-") || reg_u.starts_with("A15-") {
+            if let Some(b) = banners_lower.get("australian-army-v2.png").or_else(|| banners_lower.get("australian-army.png")) {
+                return Some(b.clone());
+            }
+        }
+        if op_u.contains("NAVY") {
+            if let Some(b) = banners_lower.get("royal-australian-navy.png") { return Some(b.clone()); }
+        }
+        if op_u.contains("AIR FORCE") || op_u == "RAAF" || call_u.starts_with("ASY") || call_u.starts_with("BFLO") || call_u.starts_with("WLBY") || call_u.starts_with("HDSN") || reg_u.starts_with("A") {
+            if let Some(b) = banners_lower.get("royal-australian-air-force.png").or_else(|| banners_lower.get("australian-air-force.png")) {
+                return Some(b.clone());
+            }
+        }
+        return None;
+    }
+
+    // 6. Japan (Country Code "jp", Mode-S block 840000 - 87FFFF)
+    if cc == "jp" || hex_u.starts_with("84") || hex_u.starts_with("85") || hex_u.starts_with("86") || hex_u.starts_with("87") {
+        if op_u.contains("SELF DEFENSE") || op_u.contains("JASDF") || op_u.contains("JMSDF") || op_u.contains("JGSDF") || call_u.starts_with("PLUTO") || reg_u.contains('-') {
+            if let Some(b) = banners_lower.get("japan-air-self-defense-force.png").or_else(|| banners_lower.get("jasdf.png")) {
+                return Some(b.clone());
+            }
+        }
+        return None;
+    }
+
+    // 7. Germany (Country Code "de", Mode-S block 3C0000 - 3FFFFF)
+    if cc == "de" || hex_u.starts_with("3C") || hex_u.starts_with("3D") || hex_u.starts_with("3E") || hex_u.starts_with("3F") {
+        if op_u.contains("MARINE") || call_u.starts_with("GAM") {
+            if let Some(b) = banners_lower.get("german-navy.png") { return Some(b.clone()); }
+        }
+        if op_u.contains("LUFTWAFFE") || op_u.contains("BUNDESWEHR") || call_u.starts_with("GAF") {
+            if let Some(b) = banners_lower.get("luftwaffe.png") { return Some(b.clone()); }
+        }
+        return None;
+    }
+
+    // 8. France (Country Code "fr", Mode-S block 380000 - 3AFFFF)
+    if cc == "fr" || hex_u.starts_with("38") || hex_u.starts_with("39") || hex_u.starts_with("3A") {
+        if op_u.contains("ARMEE DE L'AIR") || op_u.contains("FRENCH AIR FORCE") || call_u.starts_with("CTM") || call_u.starts_with("COTAM") {
+            if let Some(b) = banners_lower.get("french-air-force.png") { return Some(b.clone()); }
+        }
+        if op_u.contains("MARINE") || call_u.starts_with("FNY") {
+            if let Some(b) = banners_lower.get("french-navy.png") { return Some(b.clone()); }
+        }
+        if op_u.contains("TERRE") || op_u.contains("ALAT") || call_u.starts_with("FMY") {
+            if let Some(b) = banners_lower.get("french-army.png") { return Some(b.clone()); }
+        }
+        return None;
+    }
+
+    // 9. Spain (Country Code "es", Mode-S block 340000 - 37FFFF)
+    if cc == "es" || hex_u.starts_with("34") || hex_u.starts_with("35") || hex_u.starts_with("36") || hex_u.starts_with("37") {
+        if op_u.contains("EJERCITO") || call_u.starts_with("AME") {
+            if let Some(b) = banners_lower.get("ejercito-del-aire.png") { return Some(b.clone()); }
+        }
+        return None;
+    }
+
+    // 10. Singapore (Country Code "sg", Mode-S block 768000 - 76FFFF)
+    if cc == "sg" || (hex_u.starts_with("76") && hex_u >= "768000".to_string() && hex_u <= "76FFFF".to_string()) {
+        if op_u.contains("AIR FORCE") || op_u.contains("RSAF") || call_u.starts_with("EGLE") || call_u.starts_with("SAF") {
+            if let Some(b) = banners_lower.get("republic-of-singapore-air-force.png").or_else(|| banners_lower.get("saf.png")) {
+                return Some(b.clone());
+            }
+        }
+        return None;
+    }
+
+    // 11. Saudi Arabia (Country Code "sa", Mode-S block 710000 - 717FFF)
+    if cc == "sa" || hex_u.starts_with("71") {
+        if op_u.contains("AIR FORCE") || op_u.contains("RSAF") || call_u.starts_with("RSAF") {
+            if let Some(b) = banners_lower.get("royal-saudi-air-force.png") { return Some(b.clone()); }
+        }
+        return None;
+    }
+
+    // 12. Israel (Country Code "il", Mode-S block 738000 - 73FFFF)
+    if cc == "il" || hex_u.starts_with("738") || hex_u.starts_with("739") || hex_u.starts_with("73A") || hex_u.starts_with("73B") || hex_u.starts_with("73C") || hex_u.starts_with("73D") || hex_u.starts_with("73E") || hex_u.starts_with("73F") {
+        if op_u.contains("AIR FORCE") || op_u.contains("IAF") || call_u.starts_with("IAF") {
+            if let Some(b) = banners_lower.get("israeli-air-force.png") { return Some(b.clone()); }
+        }
+        return None;
+    }
+
+    // 13. Egypt (Country Code "eg", Mode-S block 010000 - 017FFF)
+    if cc == "eg" || hex_u.starts_with("01") {
+        if op_u.contains("AIR FORCE") || op_u.contains("EGY") || call_u.starts_with("EGY") {
+            if let Some(b) = banners_lower.get("egyptian-air-force.png") { return Some(b.clone()); }
+        }
+        return None;
+    }
+
+    // 14. United Arab Emirates (Country Code "ae", Mode-S block 896000 - 896FFF)
+    if cc == "ae" || hex_u.starts_with("896") {
+        if op_u.contains("AIR FORCE") || op_u.contains("UAF") || call_u.starts_with("UAF") {
+            if let Some(b) = banners_lower.get("united-arab-emirates-air-force.png").or_else(|| banners_lower.get("uaf.png")) {
+                return Some(b.clone());
+            }
+        }
+        return None;
+    }
+
+    // 15. Turkey (Country Code "tr", Mode-S block 4B8000 - 4BFFFF)
+    if cc == "tr" || hex_u.starts_with("4B8") || hex_u.starts_with("4B9") || hex_u.starts_with("4BA") || hex_u.starts_with("4BB") || hex_u.starts_with("4BC") || hex_u.starts_with("4BD") || hex_u.starts_with("4BE") || hex_u.starts_with("4BF") {
+        if op_u.contains("AIR FORCE") || op_u.contains("THK") || call_u.starts_with("THK") {
+            if let Some(b) = banners_lower.get("turkish-air-force.png") { return Some(b.clone()); }
+        }
+        return None;
+    }
+
+    // 16. Canada (Country Code "ca", Mode-S block C00000 - C3FFFF)
+    if cc == "ca" || hex_u.starts_with("C0") || hex_u.starts_with("C1") || hex_u.starts_with("C2") || hex_u.starts_with("C3") {
+        if op_u.contains("AIR FORCE") || op_u.contains("RCAF") || call_u.starts_with("CFC") || call_u.starts_with("CANFORCE") {
+            if let Some(b) = banners_lower.get("royal-canadian-air-force.png") { return Some(b.clone()); }
+        }
+        return None;
+    }
+
+    None
+}
+
+/// Master Autonomous Resolution Function
+fn determine_banner(
+    hex: &str,
+    owner: &str,
+    callsign: &str,
+    reg: &str,
+    is_military: bool,
+    banners: &HashSet<String>,
+    banners_lower: &HashMap<String, String>,
+    m: &Matchers,
+    inst_index: Option<&InstitutionalIndex>,
+) -> Option<String> {
+    let hex_u = hex.trim().to_uppercase();
+    let call_u = callsign.trim().to_uppercase();
+    let mut eff_op = owner.trim().to_string();
+
+    let country_info = icao_country::get_country(&hex_u);
+    let country_code = country_info.map(|c| c.country_code).unwrap_or("");
+
+    // 1. Check verified institutional index strictly by Mode-S HEX
+    if let Some(inst) = inst_index {
+        if let Some(entry) = inst.by_hex.get(&hex_u) {
+            if let Some(ref icao) = entry.banner_icao {
+                let cand = format!("{}.png", icao.to_lowercase());
+                if let Some(target) = banners_lower.get(&cand) {
+                    return Some(target.clone());
+                }
+            }
+            if let Some(ref op_key) = entry.operator_key {
+                let cand = format!("{}.png", op_key.to_lowercase());
+                if let Some(target) = banners_lower.get(&cand) {
+                    return Some(target.clone());
+                }
+            }
+            if eff_op.is_empty() {
+                if let Some(ref op_name) = entry.operator {
+                    eff_op = op_name.clone();
+                }
+            }
+        }
+    }
+
+    // 2. Sovereign Military & State Fleet Matching
+    if let Some(mil_b) = match_military_operator_sovereign(&hex_u, country_code, &eff_op, &call_u, reg, banners_lower) {
+        return Some(mil_b);
+    }
+
+    // If flagged military by readsb (dbFlags & 1), NEVER assign a civilian airline!
+    if is_military {
+        // Fallback to national air force of this country if available
+        if country_code == "jo" {
+            if let Some(b) = banners_lower.get("royal-jordanian-air-force.png") { return Some(b.clone()); }
+        } else if country_code == "it" {
+            if let Some(b) = banners_lower.get("italian-air-force.png") { return Some(b.clone()); }
+        } else if country_code == "us" {
+            if let Some(b) = banners_lower.get("united-states-air-force.png") { return Some(b.clone()); }
+        }
+        return None;
+    }
+
+    // 3. Commercial Airline Identification via Standard ICAO Airline Call signs
+    // e.g. RYR123, AZA456, DLH101, EZY23A, BAW789, ACA843
+    if call_u.len() >= 4 && m.re_commercial_callsign.is_match(&call_u) {
+        let icao_prefix = &call_u[..3];
+        if !is_generic_callsign_word(icao_prefix) {
+            let icao_png = format!("{}.png", icao_prefix.to_lowercase());
+            if let Some(target) = banners_lower.get(&icao_png) {
+                return Some(target.clone());
+            }
+        }
+    }
+
+    // 4. Commercial / Corporate Operators by exact slug or recognized suffixes
+    if eff_op.len() > 2 {
+        let slug = m.clean_slug(&eff_op);
+        if !slug.is_empty() && !m.re_skip_op.is_match(&slug) {
+            let fname = format!("{}.png", slug);
+            if let Some(target) = banners_lower.get(&fname) {
+                return Some(target.clone());
+            }
+
+            let suffixes = [
+                "-inc", "-llc", "-ltd", "-limited", "-corp", "-corporation", "-co",
+                "-airlines", "-airline", "-airways", "-air", "-gmbh", "-ag", "-spa",
+                "-s-p-a", "-sa", "-s-a", "-ab", "-as", "-bv", "-b-v", "-nv", "-n-v",
+                "-oy", "-aero", "-aviation", "-air-taxi", "-taxi", "-services", "-service",
+                "-italy", "-italia", "-spain", "-espana", "-france", "-germany",
+                "-deutschland", "-uk", "-swiss", "-europe", "-group", "-holding"
+            ];
+            let mut curr = slug.clone();
+            for _ in 0..3 {
+                let mut changed = false;
+                for sfx in &suffixes {
+                    if curr.ends_with(sfx) {
+                        curr = curr[..curr.len() - sfx.len()].trim_matches('-').to_string();
+                        changed = true;
+                        let cand_sfx = format!("{}.png", curr);
+                        if let Some(target) = banners_lower.get(&cand_sfx) {
+                            return Some(target.clone());
+                        }
+                    }
+                }
+                if !changed { break; }
+            }
+        }
+    }
+
+    None
+}
+
+/// Resolve aircraft online STRICTLY and EXCLUSIVELY by Mode-S HEX.
+async fn handle_online_resolution(
+    client: reqwest::Client,
+    hex: String,
+    banners_lower: Arc<HashMap<String, String>>,
+    active_set: Arc<Mutex<HashSet<String>>>,
+    _failed_set: Arc<Mutex<HashMap<String, std::time::Instant>>>,
+) -> Option<String> {
+    let mut candidate_op = String::new();
+    let mut reg = String::new();
+
+    // Query online discovery strictly by HEX (Planespotters hex photo API, HexDB)
+    if let Some((discovered_op, discovered_reg)) = online_discovery::query_hex_operator(&client, &hex).await {
+        candidate_op = discovered_op;
+        reg = discovered_reg;
+        if let Ok(conn) = Connection::open(SQLITE_PATH) {
+            let _ = conn.execute(
+                "INSERT OR REPLACE INTO aircraft_owners (hex, registration, owner, type) VALUES (?1, ?2, ?3, COALESCE((SELECT type FROM aircraft_owners WHERE hex = ?1), ''))",
+                [&hex, &reg, &candidate_op],
+            );
+        }
+    }
+
+    let clean_candidate = candidate_op.trim();
+    if clean_candidate.len() <= 2 {
+        active_set.lock().await.remove(&hex);
+        return None;
+    }
+
+    // 1. Check local banners
+    let matchers = Matchers::new();
+    let mut matched_banner: Option<String> = None;
+
+    let slug = matchers.clean_slug(clean_candidate);
+    if !slug.is_empty() {
+        let fname = format!("{}.png", slug);
+        if let Some(target) = banners_lower.get(&fname) {
+            matched_banner = Some(target.clone());
+        } else {
+            let suffixes = [
+                "-inc", "-llc", "-ltd", "-limited", "-corp", "-corporation", "-co",
+                "-airlines", "-airline", "-airways", "-air", "-gmbh", "-ag", "-spa",
+                "-s-p-a", "-sa", "-s-a", "-ab", "-as", "-bv", "-b-v", "-nv", "-n-v",
+                "-oy", "-aero", "-aviation", "-air-taxi", "-taxi", "-services", "-service",
+                "-italy", "-italia", "-spain", "-espana", "-france", "-germany",
+                "-deutschland", "-uk", "-swiss", "-europe", "-group", "-holding"
+            ];
+            let mut curr = slug.clone();
+            for _ in 0..3 {
+                let mut changed = false;
+                for sfx in &suffixes {
+                    if curr.ends_with(sfx) {
+                        curr = curr[..curr.len() - sfx.len()].trim_matches('-').to_string();
+                        changed = true;
+                        let cand_sfx = format!("{}.png", curr);
+                        if let Some(target) = banners_lower.get(&cand_sfx) {
+                            matched_banner = Some(target.clone());
+                            break;
+                        }
+                    }
+                }
+                if matched_banner.is_some() || !changed {
+                    break;
+                }
+            }
+        }
+    }
+
+    // Check index by_operator
+    if matched_banner.is_none() {
+        if let Ok(data) = fs::read_to_string(INDEX_PATH) {
+            if let Ok(idx) = serde_json::from_str::<MasterIndex>(&data) {
+                if let Some(b) = get_mapped_banner(idx.by_operator.get(&clean_candidate.to_uppercase())) {
+                    matched_banner = Some(b);
+                }
+            }
+        }
+    }
+
+    let final_banner_filename = if let Some(local_b) = matched_banner {
+        eprintln!(
+            "[ADSBItalia Rust Resolver v5.0] Matched LOCAL banner for {}: {}",
+            clean_candidate, local_b
+        );
+        local_b
+    } else {
+        // 2. Not found locally -> Download & Render from Online
+        let banner_filename = format!("{}.png", slug);
+        let banner_path = Path::new(BANNER_DIR).join(&banner_filename);
+
+        if !banner_path.exists() {
+            eprintln!(
+                "[ADSBItalia Rust Resolver v5.0] No local banner for '{}'. Querying online Wikidata/Commons...",
+                clean_candidate
+            );
+            if let Some((logo_data, is_svg)) = online_discovery::resolve_operator_logo(&client, clean_candidate).await {
+                let img = if is_svg {
+                    svg_engine::render_svg_to_image(&logo_data, 800)
+                } else {
+                    image::load_from_memory(&logo_data).ok().map(|i| i.to_rgba8())
+                };
+
+                if let Some(rgba) = img {
+                    match image_engine::render_banner(&rgba, &banner_path) {
+                        Ok(true) => {
+                            eprintln!(
+                                "[ADSBItalia Rust Resolver v5.0] Verified & generated online banner: {} -> {}",
+                                clean_candidate, banner_filename
+                            );
+                        }
+                        Ok(false) => {
+                            eprintln!(
+                                "[ADSBItalia Rust Resolver v5.0] REJECTED low-quality/stamp logo for: {}",
+                                clean_candidate
+                            );
+                            active_set.lock().await.remove(&hex);
+                            return None;
+                        }
+                        Err(e) => {
+                            eprintln!("[ADSBItalia Rust Resolver] Error saving banner: {}", e);
+                            active_set.lock().await.remove(&hex);
+                            return None;
+                        }
+                    }
+                } else {
+                    active_set.lock().await.remove(&hex);
+                    return None;
+                }
+            } else {
+                active_set.lock().await.remove(&hex);
+                return None;
+            }
+        }
+
+        banner_filename
+    };
+
+    // Save into operator-banner-index.json
+    if let Ok(data) = fs::read_to_string(INDEX_PATH) {
+        if let Ok(mut idx) = serde_json::from_str::<MasterIndex>(&data) {
+            idx.by_hex.insert(hex.clone(), Value::String(final_banner_filename.clone()));
+            if !clean_candidate.is_empty() {
+                idx.by_operator.insert(clean_candidate.to_uppercase(), Value::String(final_banner_filename.clone()));
+            }
+            let _ = fs::write(INDEX_PATH, serde_json::to_string_pretty(&idx).unwrap_or_default());
+        }
+    }
+
+    active_set.lock().await.remove(&hex);
+    Some(final_banner_filename)
+}
+
+#[tokio::main]
+async fn main() {
+    let args: Vec<String> = std::env::args().collect();
+
+    // CLI mode: adsbitalia-resolver --resolve <HEX>
+    if args.len() > 1 && (args[1] == "--resolve" || !args[1].starts_with('-')) {
+        let offset = if args[1] == "--resolve" { 2 } else { 1 };
+        let hex = args.get(offset).cloned().unwrap_or_default().trim().to_uppercase();
+
+        if hex.len() != 6 {
+            println!("RESULT:None");
+            return;
+        }
+
+        // 1. Check index by_hex directly
+        if let Ok(data) = fs::read_to_string(INDEX_PATH) {
+            if let Ok(idx) = serde_json::from_str::<MasterIndex>(&data) {
+                if let Some(b) = get_mapped_banner(idx.by_hex.get(&hex)) {
+                    println!("RESULT:{}", b);
+                    return;
+                }
+            }
+        }
+
+        let (banners, banners_lower) = load_available_banners();
+        let matchers = Matchers::new();
+        let conn = Connection::open_with_flags(SQLITE_PATH, OpenFlags::SQLITE_OPEN_READ_ONLY).ok();
+
+        // 2. Lookup owner by HEX in database
+        let mut owner = String::new();
+        if let Some(ref db) = conn {
+            if let Some(db_owner) = lookup_owner_by_hex(db, &hex) {
+                owner = db_owner;
+            }
+        }
+
+        // 3. Determine banner from hex and owner
+        let inst_idx: Option<InstitutionalIndex> = fs::read_to_string(INSTITUTIONAL_INDEX_PATH).ok().and_then(|d| serde_json::from_str(&d).ok());
+        if let Some(banner) = determine_banner(
+            &hex,
+            &owner,
+            "",
+            "",
+            false,
+            &banners,
+            &banners_lower,
+            &matchers,
+            inst_idx.as_ref(),
+        ) {
+            println!("RESULT:{}", banner);
+            return;
+        }
+
+        // 4. Online resolution strictly by HEX
+        let http_client = online_discovery::make_http_client();
+        let active_lookups = Arc::new(Mutex::new(HashSet::<String>::new()));
+        active_lookups.lock().await.insert(hex.clone());
+
+        let failed_dummy = Arc::new(Mutex::new(HashMap::new()));
+        if let Some(res) = handle_online_resolution(http_client, hex, Arc::new(banners_lower), active_lookups, failed_dummy).await {
+            println!("RESULT:{}", res);
+        } else {
+            println!("RESULT:None");
+        }
+        return;
+    }
+
+    eprintln!("Starting ADSBItalia Native 100% Rust Autonomous Logo Resolver (HEX-FIRST v5.0 Sovereign-Aware)...");
+
+    let matchers = Matchers::new();
+    let conn = Connection::open_with_flags(SQLITE_PATH, OpenFlags::SQLITE_OPEN_READ_ONLY).ok();
+    let http_client = online_discovery::make_http_client();
+    let active_lookups = Arc::new(Mutex::new(HashSet::<String>::new()));
+    let failed_lookups = Arc::new(Mutex::new(HashMap::<String, std::time::Instant>::new()));
+    let lookup_semaphore = Arc::new(tokio::sync::Semaphore::new(2));
+
+    let mut cached_index: Option<MasterIndex> = None;
+    let mut last_index_mtime: Option<SystemTime> = None;
+
+    let mut interval = tokio::time::interval(Duration::from_secs(30));
+    loop {
+        interval.tick().await;
+
+        if !Path::new(READSB_JSON).exists() || !Path::new(INDEX_PATH).exists() {
+            continue;
+        }
+
+        let (banners, banners_lower) = load_available_banners();
+        let inst_index: Option<InstitutionalIndex> = fs::read_to_string(INSTITUTIONAL_INDEX_PATH).ok().and_then(|d| serde_json::from_str(&d).ok());
+        let shared_banners_lower = Arc::new(banners_lower.clone());
+        let mut queued_lookups = 0;
+
+        // Check if index needs reload
+        let current_mtime = fs::metadata(INDEX_PATH).and_then(|m| m.modified()).ok();
+        if cached_index.is_none() || current_mtime != last_index_mtime {
+            if let Ok(data) = fs::read_to_string(INDEX_PATH) {
+                if let Ok(idx) = serde_json::from_str::<MasterIndex>(&data) {
+                    cached_index = Some(idx);
+                    last_index_mtime = current_mtime;
+                }
+            }
+        }
+
+        let idx = match cached_index.as_mut() {
+            Some(i) => i,
+            None => continue,
+        };
+
+        let readsb_data = match fs::read_to_string(READSB_JSON) {
+            Ok(d) => d,
+            Err(_) => continue,
+        };
+
+        let v: Value = match serde_json::from_str(&readsb_data) {
+            Ok(val) => val,
+            Err(_) => continue,
+        };
+
+        let aircraft_list = match v.get("aircraft").and_then(|a| a.as_array()) {
+            Some(l) => l,
+            None => continue,
+        };
+
+        let mut newly_mapped = 0;
+
+        for ac in aircraft_list {
+            let hex = match ac.get("hex").and_then(|h| h.as_str()) {
+                Some(h) => h.trim().to_uppercase(),
+                None => continue,
+            };
+
+            if idx.ignored_hexes.contains(&hex) {
+                continue;
+            }
+
+            if get_mapped_banner(idx.by_hex.get(&hex)).is_some() {
+                continue;
+            }
+
+            // Lookup owner strictly by HEX
+            let mut owner = String::new();
+            if let Some(ref db) = conn {
+                if let Some(db_owner) = lookup_owner_by_hex(db, &hex) {
+                    owner = db_owner;
+                }
+            }
+
+            let callsign = ac.get("flight").and_then(|f| f.as_str()).unwrap_or("").trim();
+            let reg = ac.get("r").and_then(|r| r.as_str()).unwrap_or("").trim();
+            let db_flags = ac.get("dbFlags").and_then(|f| f.as_u64()).unwrap_or(0);
+            let is_military = (db_flags & 1) != 0;
+
+            if let Some(banner_file) = determine_banner(
+                &hex,
+                &owner,
+                callsign,
+                reg,
+                is_military,
+                &banners,
+                &banners_lower,
+                &matchers,
+                inst_index.as_ref(),
+            ) {
+                idx.by_hex.insert(hex.clone(), Value::String(banner_file.clone()));
+                newly_mapped += 1;
+            } else {
+                // Not mapped locally: trigger throttled asynchronous Rust online resolution by HEX
+                if queued_lookups >= 1 {
+                    continue;
+                }
+
+                let mut failed_guard = failed_lookups.lock().await;
+                if let Some(fail_time) = failed_guard.get(&hex) {
+                    if fail_time.elapsed() < Duration::from_secs(86400) {
+                        continue;
+                    } else {
+                        failed_guard.remove(&hex);
+                    }
+                }
+                drop(failed_guard);
+
+                let mut set = active_lookups.lock().await;
+                if !set.contains(&hex) {
+                    set.insert(hex.clone());
+                    drop(set);
+                    queued_lookups += 1;
+
+                    let client = http_client.clone();
+                    let hex_c = hex.clone();
+                    let set_c = Arc::clone(&active_lookups);
+                    let failed_c = Arc::clone(&failed_lookups);
+                    let sem_c = Arc::clone(&lookup_semaphore);
+                    let banners_lower_c = Arc::clone(&shared_banners_lower);
+
+                    tokio::spawn(async move {
+                        let _permit = sem_c.acquire().await;
+                        let res = handle_online_resolution(client, hex_c.clone(), banners_lower_c, set_c, Arc::clone(&failed_c)).await;
+                        if res.is_none() {
+                            failed_c.lock().await.insert(hex_c, std::time::Instant::now());
+                        }
+                    });
+                }
+            }
+        }
+
+        if newly_mapped > 0 {
+            if let Ok(updated_json) = serde_json::to_string_pretty(&idx) {
+                if fs::write(INDEX_PATH, updated_json).is_ok() {
+                    last_index_mtime = fs::metadata(INDEX_PATH).and_then(|m| m.modified()).ok();
+                    eprintln!("[ADSBItalia Rust Resolver v5.0] Auto-resolved and mapped {} aircraft locally by HEX!", newly_mapped);
+                }
+            }
+        }
+    }
+}

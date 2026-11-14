@@ -1,0 +1,5 @@
+Institutional aircraft enrichment data:
+- sdr-enthusiasts/plane-alert-db (ODbL 1.0)
+  https://github.com/sdr-enthusiasts/plane-alert-db
+- rikgale/ICAOList military owner / ICAO operator lookup
+  https://github.com/rikgale/ICAOList

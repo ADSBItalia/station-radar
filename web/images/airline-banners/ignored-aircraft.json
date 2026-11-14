@@ -1,0 +1,1436 @@
+{
+  "5002EB": {
+    "hex": "5002EB",
+    "ignored_at": 1788108504,
+    "reason": "user_ignored",
+    "registration": "T7-MEL"
+  },
+  "A002A9": {
+    "ignored_at": "2026-08-31 12:01:41",
+    "operator": "HBK LLC",
+    "registration": "N10DC",
+    "scope": "fleet"
+  },
+  "A008D4": {
+    "ignored_at": "2026-08-30 23:05:29",
+    "operator": "ALASKAN AERIAL PHOTOGRAPHY LLC",
+    "registration": "N101EE",
+    "scope": "fleet"
+  },
+  "A00BDD": {
+    "ignored_at": "2026-08-30 20:12:13",
+    "operator": "SUMMIT LEASING LLC",
+    "registration": "N1018B",
+    "scope": "fleet"
+  },
+  "A00EC2": {
+    "ignored_at": "2026-08-30 21:45:03",
+    "operator": "KUSTATAN LEASING LLC",
+    "registration": "N1022B",
+    "scope": "fleet"
+  },
+  "A00F60": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N1026V",
+    "scope": "fleet"
+  },
+  "A00FCC": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N1029Y",
+    "scope": "fleet"
+  },
+  "A0150A": {
+    "ignored_at": "2026-08-30 23:14:59",
+    "operator": "CHAN RONALD G",
+    "registration": "N104RC",
+    "scope": "fleet"
+  },
+  "A01AC4": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N1058N",
+    "scope": "fleet"
+  },
+  "A02334": {
+    "ignored_at": "2026-08-30 21:45:03",
+    "operator": "KUSTATAN LEASING LLC",
+    "registration": "N108J",
+    "scope": "fleet"
+  },
+  "A0259C": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N1086F",
+    "scope": "fleet"
+  },
+  "A02AF9": {
+    "ignored_at": "2026-08-30 21:56:47",
+    "operator": "N11MM LLC",
+    "registration": "N11MM",
+    "scope": "fleet"
+  },
+  "A032FD": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N1115M",
+    "scope": "fleet"
+  },
+  "A03329": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N1116W",
+    "scope": "fleet"
+  },
+  "A041B0": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N1154F",
+    "scope": "fleet"
+  },
+  "A0427E": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N116AA",
+    "scope": "fleet"
+  },
+  "A0457C": {
+    "ignored_at": "2026-08-30 22:31:46",
+    "operator": "ALEXANDER ANDREW B",
+    "registration": "N11642",
+    "scope": "fleet"
+  },
+  "A04635": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N117AA",
+    "scope": "fleet"
+  },
+  "A0464F": {
+    "ignored_at": "2026-08-30 21:45:03",
+    "operator": "KUSTATAN LEASING LLC",
+    "registration": "N117BB",
+    "scope": "fleet"
+  },
+  "A0586E": {
+    "hex": "A0586E",
+    "ignored_at": 1788105987,
+    "reason": "user_ignored",
+    "registration": "N121LL"
+  },
+  "A05A0B": {
+    "ignored_at": "2026-08-30 22:44:19",
+    "operator": "N1212D LLC",
+    "registration": "N1212D",
+    "scope": "fleet"
+  },
+  "A0618C": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N1232Y",
+    "scope": "fleet"
+  },
+  "A0764F": {
+    "ignored_at": "2026-08-30 21:46:07",
+    "operator": "ALTA AIR 2 LLC",
+    "registration": "N129NB",
+    "scope": "fleet"
+  },
+  "A07862": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N1296Y",
+    "scope": "fleet"
+  },
+  "A078E3": {
+    "ignored_at": "2026-08-30 20:07:44",
+    "operator": "NORTHSTAR HOLDINGS LLC",
+    "registration": "N13AL",
+    "scope": "fleet"
+  },
+  "A0AB8D": {
+    "ignored_at": "2026-08-31 12:01:44",
+    "operator": "WAR LLC",
+    "registration": "N142QS",
+    "scope": "fleet"
+  },
+  "A0C628": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N149WW",
+    "scope": "fleet"
+  },
+  "A0E81C": {
+    "ignored_at": "2026-08-31 10:20:26",
+    "operator": "JENKINS KEVIN R",
+    "registration": "N158CC",
+    "scope": "fleet"
+  },
+  "A0F9B3": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N162GA",
+    "scope": "fleet"
+  },
+  "A11111": {
+    "ignored_at": "2026-08-30 23:01:18",
+    "operator": "SOUTHWEST AVIATION ENTERPRISES",
+    "registration": "N168TB",
+    "scope": "fleet"
+  },
+  "A11CE5": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N171AA",
+    "scope": "fleet"
+  },
+  "A12723": {
+    "ignored_at": "2026-08-30 20:07:44",
+    "operator": "NORTHSTAR HOLDINGS LLC",
+    "registration": "N1733R",
+    "scope": "fleet"
+  },
+  "A1280A": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N174AA",
+    "scope": "fleet"
+  },
+  "A12B89": {
+    "ignored_at": "2026-08-30 20:07:44",
+    "operator": "NORTHSTAR HOLDINGS LLC",
+    "registration": "N1748R",
+    "scope": "fleet"
+  },
+  "A12BC1": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N175AA",
+    "scope": "fleet"
+  },
+  "A13DF9": {
+    "ignored_at": "2026-08-30 20:07:44",
+    "operator": "NORTHSTAR HOLDINGS LLC",
+    "registration": "N1797R",
+    "scope": "fleet"
+  },
+  "A1417A": {
+    "ignored_at": "2026-08-30 22:31:46",
+    "operator": "ALEXANDER ANDREW B",
+    "registration": "N180JF",
+    "scope": "fleet"
+  },
+  "A14478": {
+    "ignored_at": "2026-08-30 21:45:03",
+    "operator": "KUSTATAN LEASING LLC",
+    "registration": "N181AW",
+    "scope": "fleet"
+  },
+  "A15541": {
+    "ignored_at": "2026-08-30 22:54:43",
+    "operator": "ARROWHEAD HOLDINGS INC",
+    "registration": "N185WP",
+    "scope": "fleet"
+  },
+  "A17AD0": {
+    "ignored_at": "2026-08-30 20:13:55",
+    "operator": "EAGLE WINGS LLC",
+    "registration": "N195AT",
+    "scope": "fleet"
+  },
+  "A17DA5": {
+    "ignored_at": "2026-08-30 23:14:37",
+    "operator": "BOWLER ROBERT I",
+    "registration": "N1954C",
+    "scope": "fleet"
+  },
+  "A1C819": {
+    "ignored_at": "2026-08-30 23:01:18",
+    "operator": "SOUTHWEST AVIATION ENTERPRISES",
+    "registration": "N2138B",
+    "scope": "fleet"
+  },
+  "A1C8A1": {
+    "ignored_at": "2026-08-30 17:37:42",
+    "operator": "HINTERLAND HOLDINGS LLC",
+    "registration": "N214CS"
+  },
+  "A1CDCF": {
+    "ignored_at": "2026-08-30 20:13:55",
+    "operator": "EAGLE WINGS LLC",
+    "registration": "N215TS",
+    "scope": "fleet"
+  },
+  "A1D391": {
+    "hex": "A1D391",
+    "ignored_at": 1788097082,
+    "reason": "user_ignored",
+    "registration": "N217AP"
+  },
+  "A1D3E9": {
+    "hex": "A1D3E9",
+    "ignored_at": 1788109497,
+    "reason": "user_ignored",
+    "registration": "N217EB"
+  },
+  "A20479": {
+    "ignored_at": "2026-08-30 22:44:24",
+    "operator": "MCGREGOR DANIEL A",
+    "registration": "N229WW",
+    "scope": "fleet"
+  },
+  "A21557": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N233TJ",
+    "scope": "fleet"
+  },
+  "A2191E": {
+    "ignored_at": "2026-08-30 23:01:18",
+    "operator": "SOUTHWEST AVIATION ENTERPRISES",
+    "registration": "N234U",
+    "scope": "fleet"
+  },
+  "A21B34": {
+    "ignored_at": "2026-08-30 22:29:15",
+    "operator": "HAMILTON AVIATION INC",
+    "registration": "N235BH",
+    "scope": "fleet"
+  },
+  "A21B90": {
+    "ignored_at": "2026-08-30 22:44:21",
+    "operator": "POIROT STEVEN JAMES",
+    "registration": "N235F",
+    "scope": "fleet"
+  },
+  "A22D1D": {
+    "ignored_at": "2026-08-30 21:46:20",
+    "operator": "CLARK PATRICK L",
+    "registration": "N2396D",
+    "scope": "fleet"
+  },
+  "A2464A": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N246AA",
+    "scope": "fleet"
+  },
+  "A255EE": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N25JA",
+    "scope": "fleet"
+  },
+  "A262AE": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N253AL",
+    "scope": "fleet"
+  },
+  "A26665": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N254AL",
+    "scope": "fleet"
+  },
+  "A267B3": {
+    "ignored_at": "2026-08-31 09:53:31",
+    "operator": "SIVU TRANSPORTATION LLC",
+    "registration": "N254PV",
+    "scope": "fleet"
+  },
+  "A27CDC": {
+    "ignored_at": "2026-08-30 21:45:03",
+    "operator": "KUSTATAN LEASING LLC",
+    "registration": "N26CF",
+    "scope": "fleet"
+  },
+  "A28938": {
+    "ignored_at": "2026-08-30 23:05:29",
+    "operator": "ALASKAN AERIAL PHOTOGRAPHY LLC",
+    "registration": "N2623M",
+    "scope": "fleet"
+  },
+  "A2A53D": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N27MG",
+    "scope": "fleet"
+  },
+  "A2AA25": {
+    "ignored_at": "2026-08-30 22:47:48",
+    "operator": "CMVII LLC",
+    "registration": "N2709X",
+    "scope": "fleet"
+  },
+  "A2AB06": {
+    "ignored_at": "2026-08-30 23:01:18",
+    "operator": "SOUTHWEST AVIATION ENTERPRISES",
+    "registration": "N271JL",
+    "scope": "fleet"
+  },
+  "A2BFB3": {
+    "ignored_at": "2026-08-30 22:44:24",
+    "operator": "MCGREGOR DANIEL A",
+    "registration": "N2764J",
+    "scope": "fleet"
+  },
+  "A2CBAF": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N28AN",
+    "scope": "fleet"
+  },
+  "A2D4B0": {
+    "ignored_at": "2026-08-30 20:11:01",
+    "operator": "KING AIR INC",
+    "registration": "N28141",
+    "scope": "fleet"
+  },
+  "A2F43B": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N29MG",
+    "scope": "fleet"
+  },
+  "A2F996": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N291EA",
+    "scope": "fleet"
+  },
+  "A2FD4D": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N292EA",
+    "scope": "fleet"
+  },
+  "A30104": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N293EA",
+    "scope": "fleet"
+  },
+  "A304BB": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N294EA",
+    "scope": "fleet"
+  },
+  "A30872": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N295EA",
+    "scope": "fleet"
+  },
+  "A30C29": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N296EA",
+    "scope": "fleet"
+  },
+  "A30FE0": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N297EA",
+    "scope": "fleet"
+  },
+  "A31C78": {
+    "ignored_at": "2026-08-30 22:31:27",
+    "operator": "DILLER CHRISTINA",
+    "registration": "N3UX",
+    "scope": "fleet"
+  },
+  "A31E49": {
+    "hex": "A31E49",
+    "ignored_at": 1788108748,
+    "reason": "user_ignored",
+    "registration": "N30PL"
+  },
+  "A32298": {
+    "ignored_at": "2026-08-30 20:11:01",
+    "operator": "KING AIR INC",
+    "registration": "N30063",
+    "scope": "fleet"
+  },
+  "A32460": {
+    "hex": "A32460",
+    "ignored_at": 1788105660,
+    "reason": "user_ignored",
+    "registration": "N301PT"
+  },
+  "A34592": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N31MG",
+    "scope": "fleet"
+  },
+  "A3480D": {
+    "ignored_at": "2026-08-30 22:47:51",
+    "operator": "MY HOLDINGS INC",
+    "registration": "N310NR",
+    "scope": "fleet"
+  },
+  "A3516A": {
+    "ignored_at": "2026-08-30 22:08:34",
+    "operator": "LUTZ ADAM",
+    "registration": "N3126A",
+    "scope": "fleet"
+  },
+  "A35CF6": {
+    "ignored_at": "2026-08-30 22:08:34",
+    "operator": "LUTZ ADAM",
+    "registration": "N31589",
+    "scope": "fleet"
+  },
+  "A361B6": {
+    "ignored_at": "2026-08-30 17:37:42",
+    "operator": "HINTERLAND HOLDINGS LLC",
+    "registration": "N317KC"
+  },
+  "A38398": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N3252Y",
+    "scope": "fleet"
+  },
+  "A3852D": {
+    "ignored_at": "2026-08-30 22:47:51",
+    "operator": "MY HOLDINGS INC",
+    "registration": "N326FX",
+    "scope": "fleet"
+  },
+  "A3A6A3": {
+    "ignored_at": "2026-08-30 23:01:18",
+    "operator": "SOUTHWEST AVIATION ENTERPRISES",
+    "registration": "N334WD",
+    "scope": "fleet"
+  },
+  "A3A84F": {
+    "ignored_at": "2026-08-30 23:02:38",
+    "operator": "JIN JIN AVIATION LLC",
+    "registration": "N3349S",
+    "scope": "fleet"
+  },
+  "A4323B": {
+    "hex": "A4323B",
+    "ignored_at": 1788098616,
+    "reason": "user_ignored",
+    "registration": "N37JA"
+  },
+  "A45A6F": {
+    "ignored_at": "2026-08-30 20:21:12",
+    "operator": "GEE KEVIN D",
+    "registration": "N38RG",
+    "scope": "fleet"
+  },
+  "A491E3": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N394CM",
+    "scope": "fleet"
+  },
+  "A49550": {
+    "ignored_at": "2026-08-30 23:14:40",
+    "operator": "BARRICKMAN WILLIAM A",
+    "registration": "N3949Z",
+    "scope": "fleet"
+  },
+  "A499E1": {
+    "ignored_at": "2026-08-31 09:53:31",
+    "operator": "SIVU TRANSPORTATION LLC",
+    "registration": "N396JF",
+    "scope": "fleet"
+  },
+  "A4B22B": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N401US",
+    "scope": "fleet"
+  },
+  "A4BF68": {
+    "ignored_at": "2026-08-31 10:20:08",
+    "operator": "NEVADA GLOBAL JET LLC",
+    "registration": "N405CB",
+    "scope": "fleet"
+  },
+  "A4C74C": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N407GV",
+    "scope": "fleet"
+  },
+  "A4CEBA": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N409GV",
+    "scope": "fleet"
+  },
+  "A4D203": {
+    "ignored_at": "2026-08-30 20:11:01",
+    "operator": "KING AIR INC",
+    "registration": "N41CK",
+    "scope": "fleet"
+  },
+  "A4D205": {
+    "ignored_at": "2026-08-30 21:46:20",
+    "operator": "CLARK PATRICK L",
+    "registration": "N41CM",
+    "scope": "fleet"
+  },
+  "A4D4CA": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N410GV",
+    "scope": "fleet"
+  },
+  "A4D881": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N411GV",
+    "scope": "fleet"
+  },
+  "A4DA49": {
+    "ignored_at": "2026-08-30 22:44:24",
+    "operator": "MCGREGOR DANIEL A",
+    "registration": "N41101",
+    "scope": "fleet"
+  },
+  "A4DEAD": {
+    "ignored_at": "2026-08-30 23:02:45",
+    "operator": "JORDAN DAVID THOMAS",
+    "registration": "N4125Z",
+    "scope": "fleet"
+  },
+  "A4F48E": {
+    "ignored_at": "2026-08-30 20:11:01",
+    "operator": "KING AIR INC",
+    "registration": "N4182Z",
+    "scope": "fleet"
+  },
+  "A4FEE2": {
+    "ignored_at": "2026-08-30 22:30:26",
+    "operator": "SATATHITE WILL J, SATATHITE PAM J",
+    "registration": "N42060",
+    "scope": "fleet"
+  },
+  "A50503": {
+    "ignored_at": "2026-08-31 12:01:41",
+    "operator": "HBK LLC",
+    "registration": "N422WB",
+    "scope": "fleet"
+  },
+  "A51CD3": {
+    "ignored_at": "2026-08-30 22:47:51",
+    "operator": "MY HOLDINGS INC",
+    "registration": "N4288M",
+    "scope": "fleet"
+  },
+  "A525D2": {
+    "ignored_at": "2026-08-30 23:02:38",
+    "operator": "JIN JIN AVIATION LLC",
+    "registration": "N4302X",
+    "scope": "fleet"
+  },
+  "A52D36": {
+    "ignored_at": "2026-08-30 23:14:26",
+    "operator": "VEAL JEFFREY S, VEAL PETRA I",
+    "registration": "N4322M",
+    "scope": "fleet"
+  },
+  "A52DE7": {
+    "ignored_at": "2026-08-30 20:11:01",
+    "operator": "KING AIR INC",
+    "registration": "N4327P",
+    "scope": "fleet"
+  },
+  "A531BA": {
+    "ignored_at": "2026-08-30 23:01:18",
+    "operator": "SOUTHWEST AVIATION ENTERPRISES",
+    "registration": "N4338G",
+    "scope": "fleet"
+  },
+  "A54DFA": {
+    "ignored_at": "2026-08-30 22:31:38",
+    "operator": "RHYNEER LOREN S",
+    "registration": "N4407R",
+    "scope": "fleet"
+  },
+  "A565A9": {
+    "ignored_at": "2026-08-30 23:01:18",
+    "operator": "SOUTHWEST AVIATION ENTERPRISES",
+    "registration": "N447LS",
+    "scope": "fleet"
+  },
+  "A56B76": {
+    "ignored_at": "2026-08-30 20:11:01",
+    "operator": "KING AIR INC",
+    "registration": "N44851",
+    "scope": "fleet"
+  },
+  "A5783D": {
+    "ignored_at": "2026-08-30 20:07:44",
+    "operator": "NORTHSTAR HOLDINGS LLC",
+    "registration": "N4510T",
+    "scope": "fleet"
+  },
+  "A5828E": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N454SF",
+    "scope": "fleet"
+  },
+  "A590D1": {
+    "ignored_at": "2026-08-30 23:01:18",
+    "operator": "SOUTHWEST AVIATION ENTERPRISES",
+    "registration": "N458LC",
+    "scope": "fleet"
+  },
+  "A5A3C7": {
+    "ignored_at": "2026-08-30 23:18:24",
+    "operator": "LINDSAY LORI K, LINDSAY LYNN G",
+    "registration": "N46227",
+    "scope": "fleet"
+  },
+  "A5AC1D": {
+    "ignored_at": "2026-08-30 22:47:51",
+    "operator": "MY HOLDINGS INC",
+    "registration": "N4649U",
+    "scope": "fleet"
+  },
+  "A5AF74": {
+    "ignored_at": "2026-08-30 23:01:22",
+    "operator": "STEPHEN IAIN D, STEPHEN MARA K",
+    "registration": "N46563",
+    "scope": "fleet"
+  },
+  "A5B6A6": {
+    "ignored_at": "2026-08-30 23:14:33",
+    "operator": "LANE ROBERT W",
+    "registration": "N4675C",
+    "scope": "fleet"
+  },
+  "A5DA5B": {
+    "ignored_at": "2026-08-30 20:17:11",
+    "operator": "(Nessun operatore tx)",
+    "registration": "N4764U",
+    "scope": "single"
+  },
+  "A5DB18": {
+    "ignored_at": "2026-08-30 22:44:24",
+    "operator": "MCGREGOR DANIEL A",
+    "registration": "N47698",
+    "scope": "fleet"
+  },
+  "A5DDEF": {
+    "hex": "A5DDEF",
+    "ignored_at": 1788110938,
+    "reason": "user_ignored",
+    "registration": "N4773U"
+  },
+  "A5DFD0": {
+    "ignored_at": "2026-08-30 23:01:18",
+    "operator": "SOUTHWEST AVIATION ENTERPRISES",
+    "registration": "N478LD",
+    "scope": "fleet"
+  },
+  "A5E20B": {
+    "ignored_at": "2026-08-30 22:44:24",
+    "operator": "MCGREGOR DANIEL A",
+    "registration": "N4786Q",
+    "scope": "fleet"
+  },
+  "A60DD4": {
+    "ignored_at": "2026-08-30 20:12:13",
+    "operator": "SUMMIT LEASING LLC",
+    "registration": "N49AW",
+    "scope": "fleet"
+  },
+  "A60F47": {
+    "ignored_at": "2026-08-30 20:15:07",
+    "operator": "AGS AVIATION LLC",
+    "registration": "N49RS",
+    "scope": "fleet"
+  },
+  "A62D90": {
+    "ignored_at": "2026-08-30 23:02:38",
+    "operator": "JIN JIN AVIATION LLC",
+    "registration": "N4978G",
+    "scope": "fleet"
+  },
+  "A62F51": {
+    "ignored_at": "2026-08-30 20:11:01",
+    "operator": "KING AIR INC",
+    "registration": "N498RK",
+    "scope": "fleet"
+  },
+  "A63575": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N5CE",
+    "scope": "fleet"
+  },
+  "A63E52": {
+    "ignored_at": "2026-08-30 23:01:18",
+    "operator": "SOUTHWEST AVIATION ENTERPRISES",
+    "registration": "N501GW",
+    "scope": "fleet"
+  },
+  "A64DF2": {
+    "ignored_at": "2026-08-30 22:29:15",
+    "operator": "HAMILTON AVIATION INC",
+    "registration": "N505QS",
+    "scope": "fleet"
+  },
+  "A68C7B": {
+    "ignored_at": "2026-08-30 22:08:34",
+    "operator": "LUTZ ADAM",
+    "registration": "N52084",
+    "scope": "fleet"
+  },
+  "A68FF0": {
+    "ignored_at": "2026-08-30 23:02:38",
+    "operator": "JIN JIN AVIATION LLC",
+    "registration": "N52168",
+    "scope": "fleet"
+  },
+  "A68FF9": {
+    "hex": "A68FF9",
+    "ignored_at": 1788111069,
+    "reason": "user_ignored",
+    "registration": "N5217G"
+  },
+  "A6A25C": {
+    "ignored_at": "2026-08-30 23:02:38",
+    "operator": "JIN JIN AVIATION LLC",
+    "registration": "N52654",
+    "scope": "fleet"
+  },
+  "A6A329": {
+    "hex": "A6A329",
+    "ignored_at": 1788109213,
+    "reason": "user_ignored",
+    "registration": "N527CH"
+  },
+  "A6AD7D": {
+    "ignored_at": "2026-08-30 23:02:38",
+    "operator": "JIN JIN AVIATION LLC",
+    "registration": "N52950",
+    "scope": "fleet"
+  },
+  "A6B173": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N530LM",
+    "scope": "fleet"
+  },
+  "A6B52A": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N531LM",
+    "scope": "fleet"
+  },
+  "A6B8E1": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N532LM",
+    "scope": "fleet"
+  },
+  "A6C3F3": {
+    "ignored_at": "2026-08-30 22:45:34",
+    "operator": "RUST PROPERTIES LLC",
+    "registration": "N535KT",
+    "scope": "fleet"
+  },
+  "A6CCF0": {
+    "ignored_at": "2026-08-30 20:11:01",
+    "operator": "KING AIR INC",
+    "registration": "N5371G",
+    "scope": "fleet"
+  },
+  "A6DC72": {
+    "ignored_at": "2026-08-30 19:12:26",
+    "operator": "LOGISTICS ALASKA LLC",
+    "registration": "N541JG",
+    "scope": "fleet"
+  },
+  "A6DCA9": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N541LM",
+    "scope": "fleet"
+  },
+  "A6E7CE": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N544LM",
+    "scope": "fleet"
+  },
+  "A6FCE7": {
+    "ignored_at": "2026-08-30 23:02:38",
+    "operator": "JIN JIN AVIATION LLC",
+    "registration": "N54983",
+    "scope": "fleet"
+  },
+  "A7066E": {
+    "ignored_at": "2026-08-30 23:02:38",
+    "operator": "JIN JIN AVIATION LLC",
+    "registration": "N55169",
+    "scope": "fleet"
+  },
+  "A713EA": {
+    "ignored_at": "2026-08-30 22:44:24",
+    "operator": "MCGREGOR DANIEL A",
+    "registration": "N555VS",
+    "scope": "fleet"
+  },
+  "A71A72": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N557LM",
+    "scope": "fleet"
+  },
+  "A71E29": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N558LM",
+    "scope": "fleet"
+  },
+  "A721E0": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N559LM",
+    "scope": "fleet"
+  },
+  "A72357": {
+    "ignored_at": "2026-08-30 22:09:11",
+    "operator": "(Nessun operatore tx)",
+    "registration": "N5591B",
+    "scope": "single"
+  },
+  "A79528": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N588RS",
+    "scope": "fleet"
+  },
+  "A7A28D": {
+    "ignored_at": "2026-08-30 20:13:55",
+    "operator": "EAGLE WINGS LLC",
+    "registration": "N591QS",
+    "scope": "fleet"
+  },
+  "A7BF86": {
+    "ignored_at": "2026-08-30 22:29:15",
+    "operator": "HAMILTON AVIATION INC",
+    "registration": "N599HA",
+    "scope": "fleet"
+  },
+  "A7C39A": {
+    "ignored_at": "2026-08-30 22:47:51",
+    "operator": "MY HOLDINGS INC",
+    "registration": "N6LU",
+    "scope": "fleet"
+  },
+  "A7CD84": {
+    "ignored_at": "2026-08-30 23:02:38",
+    "operator": "JIN JIN AVIATION LLC",
+    "registration": "N6011U",
+    "scope": "fleet"
+  },
+  "A7DC92": {
+    "ignored_at": "2026-08-30 22:47:51",
+    "operator": "MY HOLDINGS INC",
+    "registration": "N60529",
+    "scope": "fleet"
+  },
+  "A7ED1C": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N61HH",
+    "scope": "fleet"
+  },
+  "A80824": {
+    "ignored_at": "2026-08-30 20:21:12",
+    "operator": "GEE KEVIN D",
+    "registration": "N6165W",
+    "scope": "fleet"
+  },
+  "A813F4": {
+    "ignored_at": "2026-08-30 20:20:30",
+    "operator": "NORTON BASIN SERVICES, ROWE JAMES D DBA, ROWE CHRISTINE L",
+    "registration": "N62AR",
+    "scope": "fleet"
+  },
+  "A814E1": {
+    "ignored_at": "2026-08-30 20:07:44",
+    "operator": "NORTHSTAR HOLDINGS LLC",
+    "registration": "N62LC",
+    "scope": "fleet"
+  },
+  "A85313": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N6353C",
+    "scope": "fleet"
+  },
+  "A867D1": {
+    "ignored_at": "2026-08-30 23:02:38",
+    "operator": "JIN JIN AVIATION LLC",
+    "registration": "N64012",
+    "scope": "fleet"
+  },
+  "A86904": {
+    "ignored_at": "2026-08-30 17:37:42",
+    "operator": "HINTERLAND HOLDINGS LLC",
+    "registration": "N641AT"
+  },
+  "A86E3F": {
+    "ignored_at": "2026-09-02T19:24:45.222183378+00:00",
+    "operator": "COASTAL RECOVERY LLC",
+    "registration": "N642SF",
+    "scope": "fleet"
+  },
+  "A871E2": {
+    "ignored_at": "2026-08-30 23:01:18",
+    "operator": "SOUTHWEST AVIATION ENTERPRISES",
+    "registration": "N643RL",
+    "scope": "fleet"
+  },
+  "A877E0": {
+    "ignored_at": "2026-08-30 17:37:42",
+    "operator": "HINTERLAND HOLDINGS LLC",
+    "registration": "N645AT"
+  },
+  "A87B97": {
+    "ignored_at": "2026-08-30 17:37:42",
+    "operator": "HINTERLAND HOLDINGS LLC",
+    "registration": "N646AT"
+  },
+  "A8BE0A": {
+    "ignored_at": "2026-08-30 22:44:29",
+    "operator": "MC GREGOR DANIEL A",
+    "registration": "N6620L",
+    "scope": "fleet"
+  },
+  "A8CE30": {
+    "ignored_at": "2026-08-30 22:44:16",
+    "operator": "MARONEY LORRAINE J",
+    "registration": "N66691",
+    "scope": "fleet"
+  },
+  "A8F569": {
+    "hex": "A8F569",
+    "ignored_at": 1788105208,
+    "reason": "user_ignored",
+    "registration": "N67671"
+  },
+  "A91103": {
+    "ignored_at": "2026-09-02T19:20:42.612564019+00:00",
+    "operator": "HOLSEBERG PROPERTIES LLC",
+    "registration": "N6832J",
+    "scope": "fleet"
+  },
+  "A98FD7": {
+    "ignored_at": "2026-08-30 20:08:40",
+    "operator": "TNH LEASING LLC",
+    "registration": "N715NL",
+    "scope": "fleet"
+  },
+  "A99039": {
+    "ignored_at": "2026-08-30 20:08:40",
+    "operator": "TNH LEASING LLC",
+    "registration": "N715SJ",
+    "scope": "fleet"
+  },
+  "A99054": {
+    "ignored_at": "2026-08-30 20:08:40",
+    "operator": "TNH LEASING LLC",
+    "registration": "N715TL",
+    "scope": "fleet"
+  },
+  "A99269": {
+    "ignored_at": "2026-08-31 09:53:31",
+    "operator": "SIVU TRANSPORTATION LLC",
+    "registration": "N716AT",
+    "scope": "fleet"
+  },
+  "A994F9": {
+    "ignored_at": "2026-08-30 23:14:43",
+    "operator": "FAULKNER WINTHROP SEWELL",
+    "registration": "N7162D",
+    "scope": "fleet"
+  },
+  "A99754": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N717PA",
+    "scope": "fleet"
+  },
+  "A9BFE9": {
+    "ignored_at": "2026-08-30 23:14:55",
+    "operator": "YOUNG EVAN G, YOUNG MOLLY C",
+    "registration": "N7270D",
+    "scope": "fleet"
+  },
+  "AA1B9F": {
+    "ignored_at": "2026-08-30 22:29:15",
+    "operator": "HAMILTON AVIATION INC",
+    "registration": "N750SF",
+    "scope": "fleet"
+  },
+  "AA2271": {
+    "ignored_at": "2026-08-30 23:01:18",
+    "operator": "SOUTHWEST AVIATION ENTERPRISES",
+    "registration": "N752L",
+    "scope": "fleet"
+  },
+  "AA2F2F": {
+    "ignored_at": "2026-08-30 21:45:03",
+    "operator": "KUSTATAN LEASING LLC",
+    "registration": "N7551Z",
+    "scope": "fleet"
+  },
+  "AA3103": {
+    "ignored_at": "2026-08-30 22:29:15",
+    "operator": "HAMILTON AVIATION INC",
+    "registration": "N756HA",
+    "scope": "fleet"
+  },
+  "AA319B": {
+    "ignored_at": "2026-08-30 22:29:15",
+    "operator": "HAMILTON AVIATION INC",
+    "registration": "N756PC",
+    "scope": "fleet"
+  },
+  "AA3656": {
+    "ignored_at": "2026-08-30 23:02:38",
+    "operator": "JIN JIN AVIATION LLC",
+    "registration": "N757ZN",
+    "scope": "fleet"
+  },
+  "AA56A5": {
+    "ignored_at": "2026-08-30 22:47:51",
+    "operator": "MY HOLDINGS INC",
+    "registration": "N7651Q",
+    "scope": "fleet"
+  },
+  "AA6D1B": {
+    "ignored_at": "2026-08-31 09:53:31",
+    "operator": "SIVU TRANSPORTATION LLC",
+    "registration": "N771DT",
+    "scope": "fleet"
+  },
+  "AA7F66": {
+    "ignored_at": "2026-08-30 21:45:03",
+    "operator": "KUSTATAN LEASING LLC",
+    "registration": "N776AW",
+    "scope": "fleet"
+  },
+  "AA7F72": {
+    "ignored_at": "2026-08-30 21:42:44",
+    "operator": "GLOBAL AIRCRAFT LEASING LLC",
+    "registration": "N776BH",
+    "scope": "fleet"
+  },
+  "AAA208": {
+    "ignored_at": "2026-08-30 22:44:24",
+    "operator": "MCGREGOR DANIEL A",
+    "registration": "N7842H",
+    "scope": "fleet"
+  },
+  "AAA8D0": {
+    "ignored_at": "2026-08-30 17:37:42",
+    "operator": "HINTERLAND HOLDINGS LLC",
+    "registration": "N786WM"
+  },
+  "AAC363": {
+    "ignored_at": "2026-08-30 22:44:26",
+    "operator": "N793WF LEASE LLC",
+    "registration": "N793CG",
+    "scope": "fleet"
+  },
+  "AAC3A9": {
+    "ignored_at": "2026-08-30 22:44:26",
+    "operator": "N793WF LEASE LLC",
+    "registration": "N793FB",
+    "scope": "fleet"
+  },
+  "AAC993": {
+    "ignored_at": "2026-08-30 20:11:01",
+    "operator": "KING AIR INC",
+    "registration": "N7942V",
+    "scope": "fleet"
+  },
+  "AAD5FF": {
+    "ignored_at": "2026-08-30 23:01:18",
+    "operator": "SOUTHWEST AVIATION ENTERPRISES",
+    "registration": "N798CR",
+    "scope": "fleet"
+  },
+  "AAD6F0": {
+    "ignored_at": "2026-08-30 23:01:18",
+    "operator": "SOUTHWEST AVIATION ENTERPRISES",
+    "registration": "N798NG",
+    "scope": "fleet"
+  },
+  "AAE4CE": {
+    "ignored_at": "2026-08-30 22:01:52",
+    "operator": "HIGH NOON LEASING LLC",
+    "registration": "N8004N",
+    "scope": "fleet"
+  },
+  "AAE84F": {
+    "ignored_at": "2026-08-30 22:55:34",
+    "operator": "AMUNDSEN JOHN D, AMUNDSEN SUSAN M",
+    "registration": "N80124",
+    "scope": "fleet"
+  },
+  "AAF26A": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N804TH",
+    "scope": "fleet"
+  },
+  "AAF621": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N805TH",
+    "scope": "fleet"
+  },
+  "AB2023": {
+    "ignored_at": "2026-08-30 23:01:18",
+    "operator": "SOUTHWEST AVIATION ENTERPRISES",
+    "registration": "N816F",
+    "scope": "fleet"
+  },
+  "AB3447": {
+    "ignored_at": "2026-08-30 21:45:03",
+    "operator": "KUSTATAN LEASING LLC",
+    "registration": "N82076",
+    "scope": "fleet"
+  },
+  "AB6DF9": {
+    "ignored_at": "2026-08-30 22:01:52",
+    "operator": "HIGH NOON LEASING LLC",
+    "registration": "N8355E",
+    "scope": "fleet"
+  },
+  "AB765D": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N838D",
+    "scope": "fleet"
+  },
+  "AB89C3": {
+    "ignored_at": "2026-08-30 20:11:01",
+    "operator": "KING AIR INC",
+    "registration": "N8421A",
+    "scope": "fleet"
+  },
+  "ABF412": {
+    "ignored_at": "2026-08-30 20:12:13",
+    "operator": "SUMMIT LEASING LLC",
+    "registration": "N87AW",
+    "scope": "fleet"
+  },
+  "AC3C7A": {
+    "ignored_at": "2026-08-30 23:14:30",
+    "operator": "CANITZ JAMES A, CANITZ BRENDA J",
+    "registration": "N888KM",
+    "scope": "fleet"
+  },
+  "AC4868": {
+    "ignored_at": "2026-08-30 22:01:52",
+    "operator": "HIGH NOON LEASING LLC",
+    "registration": "N8905N",
+    "scope": "fleet"
+  },
+  "AC606C": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N897MD",
+    "scope": "fleet"
+  },
+  "AC6B61": {
+    "hex": "AC6B61",
+    "ignored_at": 1788097010,
+    "reason": "user_ignored",
+    "registration": "N9KF"
+  },
+  "AC6BBC": {
+    "hex": "AC6BBC",
+    "ignored_at": 1788109975,
+    "reason": "user_ignored",
+    "registration": "N9NX"
+  },
+  "AC83B7": {
+    "ignored_at": "2026-08-30 23:02:43",
+    "operator": "HINSHAW MARTIN E, BLASZAK CLINTON R",
+    "registration": "N905WD",
+    "scope": "fleet"
+  },
+  "AC84CC": {
+    "ignored_at": "2026-08-31 09:53:31",
+    "operator": "SIVU TRANSPORTATION LLC",
+    "registration": "N9055F",
+    "scope": "fleet"
+  },
+  "AC892F": {
+    "ignored_at": "2026-08-30 23:05:29",
+    "operator": "ALASKAN AERIAL PHOTOGRAPHY LLC",
+    "registration": "N907AB",
+    "scope": "fleet"
+  },
+  "AC8AE0": {
+    "ignored_at": "2026-08-30 22:55:32",
+    "operator": "GREENFIELD KEVIN TRUSTEE, OSWALD TAMERA TRUSTEE",
+    "registration": "N907TK",
+    "scope": "fleet"
+  },
+  "AC9747": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N910GF",
+    "scope": "fleet"
+  },
+  "AC9CD6": {
+    "ignored_at": "2026-08-31 12:01:44",
+    "operator": "WAR LLC",
+    "registration": "N91103",
+    "scope": "fleet"
+  },
+  "ACA220": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N913DE",
+    "scope": "fleet"
+  },
+  "ACBB23": {
+    "ignored_at": "2026-08-30 23:01:18",
+    "operator": "SOUTHWEST AVIATION ENTERPRISES",
+    "registration": "N9195B",
+    "scope": "fleet"
+  },
+  "ACBBE1": {
+    "ignored_at": "2026-08-30 22:56:26",
+    "operator": "TUSZKA AVIATION LLC",
+    "registration": "N92AR",
+    "scope": "fleet"
+  },
+  "ACBCA2": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N92JJ",
+    "scope": "fleet"
+  },
+  "ACE149": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N929TG",
+    "scope": "fleet"
+  },
+  "ACE44F": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N93LE",
+    "scope": "fleet"
+  },
+  "ACEBBE": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N9310F",
+    "scope": "fleet"
+  },
+  "ACF157": {
+    "ignored_at": "2026-08-30 23:01:18",
+    "operator": "SOUTHWEST AVIATION ENTERPRISES",
+    "registration": "N933FM",
+    "scope": "fleet"
+  },
+  "ACF3D8": {
+    "ignored_at": "2026-08-30 22:55:37",
+    "operator": "KOERITZ STEVEN R, FAHRENBRUCK GEORGE W",
+    "registration": "N9335C",
+    "scope": "fleet"
+  },
+  "AD35E4": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N950NS",
+    "scope": "fleet"
+  },
+  "AD4365": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N9539F",
+    "scope": "fleet"
+  },
+  "AD627D": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N9612B",
+    "scope": "fleet"
+  },
+  "AD92C4": {
+    "ignored_at": "2026-08-30 22:44:24",
+    "operator": "MCGREGOR DANIEL A",
+    "registration": "N974CS",
+    "scope": "fleet"
+  },
+  "ADA0E0": {
+    "ignored_at": "2026-08-30 20:07:44",
+    "operator": "NORTHSTAR HOLDINGS LLC",
+    "registration": "N9776R",
+    "scope": "fleet"
+  },
+  "ADB4F0": {
+    "ignored_at": "2026-08-30 20:16:21",
+    "operator": "AVION CAPITAL CORP",
+    "registration": "N9820F",
+    "scope": "fleet"
+  },
+  "ADB96D": {
+    "ignored_at": "2026-08-30 23:02:38",
+    "operator": "JIN JIN AVIATION LLC",
+    "registration": "N98354",
+    "scope": "fleet"
+  },
+  "ADC882": {
+    "ignored_at": "2026-08-30 20:07:44",
+    "operator": "NORTHSTAR HOLDINGS LLC",
+    "registration": "N9877R",
+    "scope": "fleet"
+  },
+  "ADD2F9": {
+    "ignored_at": "2026-08-30 23:16:23",
+    "operator": "CORSAIR TWO LLC",
+    "registration": "N990DL",
+    "scope": "fleet"
+  },
+  "ADE173": {
+    "hex": "ADE173",
+    "ignored_at": 1788109148,
+    "reason": "user_ignored",
+    "registration": "N9939Z"
+  },
+  "ADE6D4": {
+    "hex": "ADE6D4",
+    "ignored_at": 1788110820,
+    "reason": "user_ignored",
+    "registration": "N995SP"
+  },
+  "ADECF8": {
+    "ignored_at": "2026-08-31 09:53:31",
+    "operator": "SIVU TRANSPORTATION LLC",
+    "registration": "N997DJ",
+    "scope": "fleet"
+  },
+  "ADF195": {
+    "hex": "ADF195",
+    "ignored_at": 1788111262,
+    "reason": "user_ignored",
+    "registration": "N998NP"
+  }
+}

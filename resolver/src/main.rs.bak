@@ -1,0 +1,303 @@
+use std::collections::HashSet;
+use std::fs;
+use std::path::Path;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+
+use regex::Regex;
+use rusqlite::{Connection, OpenFlags};
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
+
+const READSB_JSON: &str = "/run/readsb/aircraft.json";
+const BANNER_DIR: &str = "/usr/local/share/tar1090/html/images/airline-banners";
+const INDEX_PATH: &str = "/usr/local/share/tar1090/html/images/airline-banners/operator-banner-index.json";
+const SQLITE_PATH: &str = "/var/lib/adsbitalia/aircraft_owners.sqlite3";
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+struct MasterIndex {
+    #[serde(default)]
+    by_hex: serde_json::Map<String, Value>,
+    #[serde(default)]
+    by_registration: serde_json::Map<String, Value>,
+    #[serde(default)]
+    by_icao: serde_json::Map<String, Value>,
+    #[serde(default)]
+    ignored_hexes: Vec<String>,
+    #[serde(default)]
+    ignored_operators: Vec<String>,
+}
+
+struct Matchers {
+    re_slug: Regex,
+    re_trim: Regex,
+    re_mil_op: Regex,
+    re_mil_call: Regex,
+    re_volp: Regex,
+    re_finanza: Regex,
+    re_hems_op: Regex,
+    re_hems_call: Regex,
+    re_hems_reg: Regex,
+    re_skip_op: Regex,
+    re_polizia_op: Regex,
+    re_polizia_call: Regex,
+    re_carabinieri_op: Regex,
+    re_carabinieri_call: Regex,
+    re_vvf_op: Regex,
+    re_vvf_call: Regex,
+    re_costiera_op: Regex,
+    re_costiera_call: Regex,
+    re_esercito_op: Regex,
+    re_esercito_call: Regex,
+    re_marina_op: Regex,
+    re_marina_call: Regex,
+}
+
+impl Matchers {
+    fn new() -> Self {
+        Self {
+            re_slug: Regex::new(r"[^a-z0-9]+").unwrap(),
+            re_trim: Regex::new(r"^-+|-+$").unwrap(),
+            re_mil_op: Regex::new(r"(?i)Aeronautica Militare|Italian Air Force").unwrap(),
+            re_mil_call: Regex::new(r"(?i)^(IAM|VEGA|LEGIO|PERSEO|LANCE|LORD|SPEED|ALPA|BASTIA|DAFNE|FALCO|TIPO|SHARK|PAN|INDIAN|RESCUE|SAR|HERCU|DEVIL|GRIFO)").unwrap(),
+            re_volp: Regex::new(r"(?i)^VOLP").unwrap(),
+            re_finanza: Regex::new(r"(?i)Guardia di Finanza|Finanza").unwrap(),
+            re_hems_op: Regex::new(r"(?i)Avincis|Inaer|Babcock|Elisoccorso|HEMS|Pegaso").unwrap(),
+            re_hems_call: Regex::new(r"(?i)^PEGASO").unwrap(),
+            re_hems_reg: Regex::new(r"(?i)^I-(RJ|LH|ROA|CREW|KONA)").unwrap(),
+            re_skip_op: Regex::new(r"(?i)^(bank|wells|trust|holding|leasing)").unwrap(),
+            re_polizia_op: Regex::new(r"(?i)Polizia di Stato|Polizia").unwrap(),
+            re_polizia_call: Regex::new(r"(?i)^(POLI|VOLANTE)").unwrap(),
+            re_carabinieri_op: Regex::new(r"(?i)Carabinieri").unwrap(),
+            re_carabinieri_call: Regex::new(r"(?i)^(CC|FIAMMA)").unwrap(),
+            re_vvf_op: Regex::new(r"(?i)Vigili del Fuoco|Antincendio").unwrap(),
+            re_vvf_call: Regex::new(r"(?i)^(DRAGO|VVF)").unwrap(),
+            re_costiera_op: Regex::new(r"(?i)Guardia Costiera|Capitaneria").unwrap(),
+            re_costiera_call: Regex::new(r"(?i)^(NEMO|CP|KOINE)").unwrap(),
+            re_esercito_op: Regex::new(r"(?i)Esercito Italiano|Italian Army").unwrap(),
+            re_esercito_call: Regex::new(r"(?i)^IEI").unwrap(),
+            re_marina_op: Regex::new(r"(?i)Marina Militare|Italian Navy").unwrap(),
+            re_marina_call: Regex::new(r"(?i)^MMI").unwrap(),
+        }
+    }
+
+    fn clean_slug(&self, s: &str) -> String {
+        let lower = s.to_lowercase();
+        let replaced = self.re_slug.replace_all(&lower, "-");
+        self.re_trim.replace_all(&replaced, "").to_string()
+    }
+}
+
+fn load_available_banners() -> HashSet<String> {
+    let mut files = HashSet::new();
+    if let Ok(entries) = fs::read_dir(BANNER_DIR) {
+        for entry in entries.flatten() {
+            if let Ok(ft) = entry.file_type() {
+                if ft.is_file() {
+                    let name = entry.file_name().to_string_lossy().to_string();
+                    if name.ends_with(".png") {
+                        files.insert(name);
+                    }
+                }
+            }
+        }
+    }
+    files
+}
+
+fn lookup_sqlite_info(conn: &Connection, target_hex: &str, target_reg: &str) -> Option<(String, String, String)> {
+    let mut stmt = conn.prepare_cached("SELECT registration, owner, type FROM aircraft_owners WHERE hex = ?1 OR registration = ?2 LIMIT 1").ok()?;
+    let mut rows = stmt.query([target_hex, target_reg]).ok()?;
+    if let Some(row) = rows.next().ok()? {
+        let reg: String = row.get(0).unwrap_or_default();
+        let owner: String = row.get(1).unwrap_or_default();
+        let typ: String = row.get(2).unwrap_or_default();
+        return Some((reg, owner, typ));
+    }
+    None
+}
+
+fn determine_banner(hex: &str, reg: &str, call: &str, op: &str, owner: &str, banners: &HashSet<String>, m: &Matchers) -> Option<String> {
+    let eff_op = if !op.is_empty() { op } else { owner };
+    let eff_op_clean = eff_op.trim();
+    let is_italian = hex.starts_with("30") || hex.starts_with("33") || reg.starts_with("I-") || reg.starts_with("MM") || reg.starts_with("PS-") || reg.starts_with("CC-") || reg.starts_with("VF-") || reg.starts_with("EI-") || reg.starts_with("GDF-") || reg.starts_with("CP-");
+
+    // 1. Institutional rules for Italian State Fleets
+    if m.re_polizia_op.is_match(eff_op_clean) || ((is_italian || eff_op_clean.to_uppercase().contains("STATO")) && (m.re_polizia_call.is_match(call) || reg.starts_with("PS-"))) {
+        if banners.contains("polizia-di-stato.png") {
+            return Some("polizia-di-stato.png".to_string());
+        }
+    }
+
+    if m.re_carabinieri_op.is_match(eff_op_clean) || m.re_carabinieri_call.is_match(call) || reg.starts_with("CC-") {
+        if banners.contains("carabinieri.png") {
+            return Some("carabinieri.png".to_string());
+        }
+    }
+
+    if m.re_finanza.is_match(eff_op_clean) || m.re_volp.is_match(call) || reg.starts_with("GDF-") {
+        if banners.contains("guardia-di-finanza.png") {
+            return Some("guardia-di-finanza.png".to_string());
+        }
+    }
+
+    if m.re_vvf_op.is_match(eff_op_clean) || m.re_vvf_call.is_match(call) || reg.starts_with("VF-") {
+        if banners.contains("vigili-del-fuoco.png") {
+            return Some("vigili-del-fuoco.png".to_string());
+        }
+    }
+
+    if m.re_costiera_op.is_match(eff_op_clean) || m.re_costiera_call.is_match(call) || reg.starts_with("CP-") {
+        if banners.contains("guardia-costiera.png") {
+            return Some("guardia-costiera.png".to_string());
+        }
+    }
+
+    if m.re_esercito_op.is_match(eff_op_clean) || m.re_esercito_call.is_match(call) || reg.starts_with("EI-") {
+        if banners.contains("IEI.png") {
+            return Some("IEI.png".to_string());
+        } else if banners.contains("esercito-italiano.png") {
+            return Some("esercito-italiano.png".to_string());
+        }
+    }
+
+    if m.re_marina_op.is_match(eff_op_clean) || m.re_marina_call.is_match(call) {
+        if banners.contains("marina-militare.png") {
+            return Some("marina-militare.png".to_string());
+        }
+    }
+
+    if m.re_hems_op.is_match(eff_op_clean) || m.re_hems_call.is_match(call) || m.re_hems_reg.is_match(reg) {
+        if banners.contains("avincis.png") {
+            return Some("avincis.png".to_string());
+        } else if banners.contains("elisoccorso-118.png") {
+            return Some("elisoccorso-118.png".to_string());
+        }
+    }
+
+    // Aeronautica Militare ONLY if Italian military and not one of the other branches
+    if m.re_mil_op.is_match(eff_op_clean)
+        || call.starts_with("IAM")
+        || (is_italian && (hex.starts_with("33F") || hex.starts_with("33E") || reg.starts_with("MM")) && (call.is_empty() || m.re_mil_call.is_match(call)))
+    {
+        if banners.contains("aeronautica-militare.png") {
+            return Some("aeronautica-militare.png".to_string());
+        }
+    }
+
+    // 2. 3-letter ICAO callsign code check on disk (e.g. RYR -> ryr.png)
+    if call.len() >= 3 {
+        let icao_lower = format!("{}.png", call[..3].to_lowercase());
+        let icao_upper = format!("{}.png", call[..3].to_uppercase());
+        if banners.contains(&icao_lower) {
+            return Some(icao_lower);
+        } else if banners.contains(&icao_upper) {
+            return Some(icao_upper);
+        }
+    }
+
+    // 3. Slug matching from operator
+    if eff_op_clean.len() > 2 {
+        let slug = m.clean_slug(eff_op_clean);
+        if !slug.is_empty() && !m.re_skip_op.is_match(&slug) {
+            let fname = format!("{}.png", slug);
+            if banners.contains(&fname) {
+                return Some(fname);
+            }
+        }
+    }
+
+    None
+}
+
+#[tokio::main]
+async fn main() {
+    println!("Starting ADSBItalia Ultra-Light Native Rust Logo Resolver v1.1 (Pre-compiled Regexes)...");
+
+    let matchers = Matchers::new();
+    let conn = Connection::open_with_flags(SQLITE_PATH, OpenFlags::SQLITE_OPEN_READ_ONLY).ok();
+
+    let mut interval = tokio::time::interval(Duration::from_secs(10));
+    loop {
+        interval.tick().await;
+
+        if !Path::new(READSB_JSON).exists() || !Path::new(INDEX_PATH).exists() {
+            continue;
+        }
+
+        let banners = load_available_banners();
+
+        let index_data = match fs::read_to_string(INDEX_PATH) {
+            Ok(d) => d,
+            Err(_) => continue,
+        };
+
+        let mut idx: MasterIndex = match serde_json::from_str(&index_data) {
+            Ok(i) => i,
+            Err(_) => continue,
+        };
+
+        let readsb_data = match fs::read_to_string(READSB_JSON) {
+            Ok(d) => d,
+            Err(_) => continue,
+        };
+
+        let v: Value = match serde_json::from_str(&readsb_data) {
+            Ok(val) => val,
+            Err(_) => continue,
+        };
+
+        let aircraft_list = match v.get("aircraft").and_then(|a| a.as_array()) {
+            Some(l) => l,
+            None => continue,
+        };
+
+        let mut newly_mapped = 0;
+
+        for ac in aircraft_list {
+            let hex = match ac.get("hex").and_then(|h| h.as_str()) {
+                Some(h) => h.trim().to_uppercase(),
+                None => continue,
+            };
+
+            let reg = ac.get("r").and_then(|r| r.as_str()).unwrap_or("").trim().to_uppercase();
+            let call = ac.get("flight").and_then(|f| f.as_str()).unwrap_or("").trim().to_uppercase();
+            let op = ac.get("ownOp").and_then(|o| o.as_str()).unwrap_or("").trim();
+
+            if idx.ignored_hexes.contains(&hex) {
+                continue;
+            }
+
+            let hex_mapped = idx.by_hex.contains_key(&hex);
+            let reg_mapped = !reg.is_empty() && idx.by_registration.contains_key(&reg);
+
+            if hex_mapped && (reg.is_empty() || reg_mapped) {
+                continue;
+            }
+
+            let mut owner = String::new();
+            if let Some(ref db) = conn {
+                if let Some((_, db_owner, _)) = lookup_sqlite_info(db, &hex, &reg) {
+                    owner = db_owner;
+                }
+            }
+
+            if let Some(banner_file) = determine_banner(&hex, &reg, &call, op, &owner, &banners, &matchers) {
+                if !hex_mapped {
+                    idx.by_hex.insert(hex.clone(), Value::String(banner_file.clone()));
+                    newly_mapped += 1;
+                }
+                if !reg.is_empty() && !reg_mapped {
+                    idx.by_registration.insert(reg.clone(), Value::String(banner_file));
+                }
+            }
+        }
+
+        if newly_mapped > 0 {
+            if let Ok(updated_json) = serde_json::to_string_pretty(&idx) {
+                let _ = fs::write(INDEX_PATH, updated_json);
+                println!("[ADSBItalia Rust Resolver] Auto-resolved and mapped {} new aircraft logos!", newly_mapped);
+            }
+        }
+    }
+}
