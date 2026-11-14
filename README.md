@@ -57,14 +57,23 @@ The installer will automatically:
 
 Ideal for users running Docker, Portainer, CasaOS, Unraid, or containerized feeder stacks (`adsb.im` / `ultrafeeder`).
 
-1. Create a `docker-compose.yml` file:
+#### Quick Setup (Build & Run from Source):
+```bash
+git clone https://github.com/ADSBItalia/station-radar.git
+cd station-radar
+docker compose up -d --build
+```
+
+#### Or with Docker Compose (standalone / existing stack):
+You can build directly from GitHub without cloning the entire repository:
 
 ```yaml
 version: '3.8'
 
 services:
   station-radar:
-    image: adsbitalia/station-radar:latest
+    build: https://github.com/ADSBItalia/station-radar.git#main
+    image: adsbitalia-station-radar:local
     container_name: station-radar
     restart: unless-stopped
     ports:
@@ -72,14 +81,14 @@ services:
     volumes:
       - ./config.json:/app/config.json
       - ./custom_images:/app/web/images/custom
-      # Optional: mount local readsb runtime directory:
-      # - /run/readsb:/run/readsb:ro
+      # Mount local readsb / dump1090 runtime directory:
+      - /run/readsb:/run/readsb:ro
     environment:
       - PORT=8088
       - PYTHONUNBUFFERED=1
 ```
 
-2. Start the container:
+Start the container:
 ```bash
 docker compose up -d
 ```

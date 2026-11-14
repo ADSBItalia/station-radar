@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # ADSBItalia Station Radar (Modern Avionics Web Radar & Settings Panel)
   station-radar:
-    image: adsbitalia/station-radar:latest
+    image: adsbitalia-station-radar:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -20,17 +20,3 @@ services:
     environment:
       - PORT=8088
       - PYTHONUNBUFFERED=1
-
-  # ADSBItalia Station Graphs (RF Signal Telemetry & Performance Dashboard)
-  station-graphs:
-    image: adsbitalia/station-graphs:latest
-    container_name: adsbitalia-station-graphs
-    restart: unless-stopped
-    ports:
-      - "8085:8085"
-    volumes:
-      - /run/readsb:/run/readsb:ro
-      - /run/collectd:/run/collectd:ro
-    environment:
-      - PORT=8085
-      - STATION_NAME=ADS-B Station
