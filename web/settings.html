@@ -429,6 +429,7 @@
     </div>
     <div class="nav-actions">
       <a href="index.html" class="btn btn-secondary">‹ Back to Radar</a>
+      <a href="#" id="linkStationGraphs" target="_blank" class="btn btn-secondary">📈 Telemetry &amp; Graphs</a>
       <button id="btnSaveTop" class="btn btn-primary" onclick="saveConfiguration()">💾 Save Settings</button>
     </div>
   </header>
@@ -685,6 +686,10 @@
     };
 
     async function loadConfiguration() {
+      const graphsLink = document.getElementById('linkStationGraphs');
+      if (graphsLink) {
+        graphsLink.href = `${window.location.protocol}//${window.location.hostname}:8085`;
+      }
       try {
         const res = await fetch('/api/config');
         if (res.ok) {

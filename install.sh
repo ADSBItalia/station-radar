@@ -39,6 +39,22 @@ if [ "$EUID" -ne 0 ]; then
     exec sudo bash "$0" "$@"
 fi
 
+INSTALL_GRAPHS=false
+if [ -t 0 ]; then
+    echo -e "${BOLD}Would you like to install the ADSBItalia Station Radar? [Y/n]${NC}"
+    read -r -p "> " answer
+    if [[ "$answer" =~ ^[Nn] ]]; then
+        echo -e "${YELLOW}[i] Installation aborted by user.${NC}"
+        exit 0
+    fi
+
+    echo -e "\n${BOLD}Would you also like to install ADSBItalia Station Graphs (RF Telemetry Dashboard)? [y/N]${NC}"
+    read -r -p "> " answer_graphs
+    if [[ "$answer_graphs" =~ ^[Yy] ]]; then
+        INSTALL_GRAPHS=true
+    fi
+fi
+
 # Detect Package Manager
 echo -e "\n${CYAN}[1/5] Checking system dependencies...${NC}"
 if command -v apt-get &> /dev/null; then
@@ -180,4 +196,9 @@ echo -e "\n${BOLD}Access your Station Radar in any browser:${NC}"
 echo -e "  📡 ${CYAN}${BOLD}Live Radar:${NC}     http://${HOST_IP}:${PORT}/"
 echo -e "  ⚙️  ${CYAN}${BOLD}Settings:${NC}       http://${HOST_IP}:${PORT}/settings"
 echo -e "\n${YELLOW}Tip: Open Settings now to customize your station name, antenna coordinates, and avionics theme!${NC}\n"
+
+if [ "$INSTALL_GRAPHS" = true ]; then
+    echo -e "\n${CYAN}[i] Launching companion installer for ADSBItalia Station Graphs...${NC}"
+    bash <(curl -sL https://raw.githubusercontent.com/ADSBItalia/station-graphs/main/install.sh) || true
+fi
 EOF
