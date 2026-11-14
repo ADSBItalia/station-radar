@@ -1599,6 +1599,53 @@
       font-size: 1rem;
     }
 
+    .card-diversion-banner {
+      margin: 4px 14px 6px 14px;
+      padding: 6px 12px;
+      background: linear-gradient(90deg, rgba(245, 158, 11, 0.22) 0%, rgba(217, 119, 6, 0.12) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: pulse-diversion 2.5s infinite;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+    }
+    @keyframes pulse-diversion {
+      0%, 100% { border-color: rgba(245, 158, 11, 0.4); box-shadow: 0 0 8px rgba(245, 158, 11, 0.15); }
+      50% { border-color: rgba(245, 158, 11, 0.85); box-shadow: 0 0 16px rgba(245, 158, 11, 0.35); }
+    }
+    .diversion-badge {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: #f59e0b;
+      color: #0b1120;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono, monospace);
+    }
+    .diversion-text {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #fef3c7;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .route-dest-strikethrough {
+      text-decoration: line-through !important;
+      opacity: 0.55 !important;
+      color: #94a3b8 !important;
+    }
+    .route-badge-diverted {
+      border-color: rgba(245, 158, 11, 0.4) !important;
+      background: rgba(245, 158, 11, 0.12) !important;
+      color: #fef3c7 !important;
+    }
+
     .card-meta-summary {
       padding: 10px 14px 8px 14px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
@@ -2805,6 +2852,19 @@
         <span class="route-iata" id="routeDestIata">LIN</span>
         <span class="route-city" id="routeDestCity">Milan Linate</span>
       </div>
+      <!-- Diversion Alternate Endpoint -->
+      <div class="route-arrow route-diverted-arrow" id="routeDivertedArrow" style="display: none; color: #f59e0b; font-weight: bold; margin: 0 4px;">➔</div>
+      <div class="route-endpoint route-diverted-endpoint" id="routeDivertedEndpoint" style="display: none; background: rgba(245, 158, 11, 0.18); border: 1px solid rgba(245, 158, 11, 0.6); padding: 4px 8px; border-radius: 8px;">
+        <span class="route-iata" id="routeDivertedIata" style="color: #f59e0b; font-weight: 800;">ALT</span>
+        <span class="route-city" id="routeDivertedCity" style="color: #fbbf24;">Alternate</span>
+      </div>
+    </div>
+
+    <!-- Diversion Warning Banner (Avionics alert) -->
+    <div class="card-diversion-banner" id="cardDiversionBanner" style="display: none;">
+      <span class="diversion-icon">⚠️</span>
+      <span class="diversion-badge" id="diversionStatusBadge">DIVERTING</span>
+      <span class="diversion-text" id="diversionStatusText">TO BLQ (Bologna)</span>
     </div>
 
     <!-- Quick Telemetry Row (Instant Glance: Altitude, Speed, V/Rate, Track) -->
@@ -6202,6 +6262,63 @@
       return closest;
     }
 
+    function detectFlightDiversion(ac, r) {
+      if (CONFIG.enableDiversions === false) return null;
+      if (!r || !r._airports || r._airports.length < 2) return null;
+      if (r.diverted_to) {
+        const isG = !!(ac && (ac.ground || ac.alt_baro === 'ground' || (typeof ac.alt_baro === 'number' && ac.alt_baro < 1500)));
+        return {
+          status: isG ? 'DIVERTED' : 'DIVERTING',
+          airport: r.diverted_to
+        };
+      }
+      if (!ac || ac.lat == null || ac.lon == null) return null;
+      const lat = Number(ac.lat);
+      const lon = Number(ac.lon);
+      if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) return null;
+
+      const origin = r._airports[0];
+      const dest = r._airports[r._airports.length - 1];
+      const oIata = (origin.iata || origin.icao || '').toUpperCase();
+      const dIata = (dest.iata || dest.icao || '').toUpperCase();
+
+      const dCoords = typeof getAirportCoords === 'function' ? getAirportCoords(dest) : null;
+      if (!dCoords) return null;
+
+      const distToDest = calculateDistanceNm(lat, lon, dCoords[1], dCoords[0]);
+      if (distToDest == null) return null;
+
+      const closest = typeof findClosestAirport === 'function' ? findClosestAirport(lon, lat, 35) : null;
+      if (!closest) return null;
+
+      const cIata = (closest.iata || closest.icao || '').toUpperCase();
+      if (!cIata || cIata === dIata || cIata === oIata) return null;
+
+      const alt = ac.alt_baro;
+      const isGround = !!ac.ground || alt === 'ground' || (typeof alt === 'number' && alt < 500);
+
+      if (isGround) {
+        return {
+          status: 'DIVERTED',
+          airport: closest
+        };
+      }
+
+      if (typeof alt === 'number' && alt < 12000 && distToDest > 30 && (closest.distNm == null || closest.distNm <= 25)) {
+        const vrate = ac.baro_rate || 0;
+        if (vrate <= 100 || alt < 6000) {
+          const status = (alt < 1500 && (ac.gs == null || ac.gs < 140)) ? 'DIVERTED' : 'DIVERTING';
+          return {
+            status: status,
+            airport: closest
+          };
+        }
+      }
+
+      return null;
+    }
+    window.detectFlightDiversion = detectFlightDiversion;
+
     function generateGreatCircleTrack(origCoords, destCoords, flightTs = null, cruiseAlt = 36000, callsign = '') {
       if (!origCoords || !destCoords || origCoords.length < 2 || destCoords.length < 2) return [];
 
@@ -7079,12 +7196,17 @@
       }
     }
 
-    function displayRoute(r) {
+    let currentRouteDiverted = null;
+
+    function displayRoute(r, targetAc) {
       const box = document.getElementById('cardRouteBox');
+      const dBan = document.getElementById('cardDiversionBanner');
       if (!r || !r._airports || r._airports.length < 2) {
-        box.style.display = 'none';
+        if (box) box.style.display = 'none';
+        if (dBan) dBan.style.display = 'none';
         currentRouteOrigin = null;
         currentRouteDest = null;
+        currentRouteDiverted = null;
         return;
       }
       const origin = r._airports[0];
@@ -7107,6 +7229,49 @@
       const elDest = document.getElementById('routeDestEndpoint');
       if (elOrigin) elOrigin.title = `Click to view ${oIata} (${oName}) airport details & flights`;
       if (elDest) elDest.title = `Click to view ${dIata} (${dName}) airport details & flights`;
+
+      // Diversion Detection & Display
+      const ac = targetAc || (selectedHex ? aircraftMap.get(selectedHex) : null);
+      const divInfo = detectFlightDiversion(ac, r);
+      const divBadge = document.getElementById('diversionStatusBadge');
+      const divText = document.getElementById('diversionStatusText');
+      const divArrow = document.getElementById('routeDivertedArrow');
+      const divEndpoint = document.getElementById('routeDivertedEndpoint');
+      const divIata = document.getElementById('routeDivertedIata');
+      const divCity = document.getElementById('routeDivertedCity');
+      const destIataEl = document.getElementById('routeDestIata');
+
+      if (divInfo && divInfo.airport) {
+        currentRouteDiverted = divInfo.airport;
+        const divApt = divInfo.airport;
+        const divCode = (divApt.iata || divApt.icao || 'ALT').toUpperCase();
+        const divLoc = divApt.location || divApt.name || divApt.city || divCode;
+        const statusLabel = divInfo.status === 'DIVERTED' ? 'DIVERTED' : 'DIVERTING';
+
+        if (destIataEl) destIataEl.classList.add('route-dest-strikethrough');
+        if (divIata) divIata.textContent = divCode;
+        if (divCity) divCity.textContent = divLoc;
+        if (divArrow) divArrow.style.display = 'block';
+        if (divEndpoint) {
+          divEndpoint.style.display = 'flex';
+          divEndpoint.title = `Click to view ${divCode} (${divLoc}) alternate airport details & flights`;
+          divEndpoint.onclick = (e) => {
+            e.stopPropagation();
+            if (typeof openAirportByRouteObj === 'function') openAirportByRouteObj(divApt);
+          };
+        }
+        if (dBan && divBadge && divText) {
+          divBadge.textContent = statusLabel;
+          divText.textContent = `TO ${divCode} (${divLoc})`;
+          dBan.style.display = 'flex';
+        }
+      } else {
+        currentRouteDiverted = null;
+        if (destIataEl) destIataEl.classList.remove('route-dest-strikethrough');
+        if (divArrow) divArrow.style.display = 'none';
+        if (divEndpoint) divEndpoint.style.display = 'none';
+        if (dBan) dBan.style.display = 'none';
+      }
 
       box.style.display = 'flex';
     }
@@ -7812,7 +7977,14 @@
             const o = rObj._airports[0].iata || rObj._airports[0].icao;
             const d = rObj._airports[rObj._airports.length - 1].iata || rObj._airports[rObj._airports.length - 1].icao;
             const title = `${rObj._airports[0].location || rObj._airports[0].name || o} ➔ ${rObj._airports[rObj._airports.length - 1].location || rObj._airports[rObj._airports.length - 1].name || d}`;
-            routeHtml = `<span class="route-badge" title="${title}">${o}➔${d}</span>`;
+            const divInfo = typeof detectFlightDiversion === 'function' ? detectFlightDiversion(ac, rObj) : null;
+            if (divInfo && divInfo.airport) {
+              const divCode = (divInfo.airport.iata || divInfo.airport.icao || 'ALT').toUpperCase();
+              const divTitle = `${title} (⚠️ ${divInfo.status} TO ${divCode}: ${divInfo.airport.location || divInfo.airport.name || divCode})`;
+              routeHtml = `<span class="route-badge route-badge-diverted" title="${divTitle}"><s style="opacity:0.65;">${d}</s>➔${divCode} <span style="font-size:0.62rem; background:#f59e0b; color:#0b1120; font-weight:800; padding:1px 3px; border-radius:3px; margin-left:2px;">${divInfo.status === 'DIVERTED' ? 'DIVERTED' : 'DIV'}</span></span>`;
+            } else {
+              routeHtml = `<span class="route-badge" title="${title}">${o}➔${d}</span>`;
+            }
           }
         }
 

@@ -1,0 +1,39 @@
+{
+  "station": {
+    "name": "Stazione ADS-B",
+    "subtitle": "Ricevitore Locale 1090 MHz",
+    "logo_url": "fiscaglia-favicon.svg",
+    "website_url": "https://adsbitalia.it",
+    "lat": 44.769651,
+    "lon": 11.930735,
+    "alt_m": 15,
+    "range_rings": [25, 50, 100, 150, 200, 250],
+    "ring_color": "#38bdf8",
+    "ring_opacity": 0.45
+  },
+  "source": {
+    "aircraft_url": "http://127.0.0.1/data/aircraft.json",
+    "receiver_url": "http://127.0.0.1/data/receiver.json",
+    "poll_interval_ms": 1000,
+    "use_proxy": true
+  },
+  "theme": {
+    "preset": "cyan",
+    "primary_color": "#38bdf8",
+    "bg_dark": "#050c14",
+    "bg_panel": "rgba(7, 23, 36, 0.94)",
+    "bg_card": "rgba(11, 34, 52, 0.96)",
+    "border_color": "rgba(56, 189, 248, 0.22)",
+    "accent_glow": "rgba(56, 189, 248, 0.45)"
+  },
+  "features": {
+    "enable_photos": true,
+    "photo_provider": "adsbitalia_proxy",
+    "enable_weather_radar": true,
+    "enable_clouds": true,
+    "enable_diversions": true,
+    "enable_military_filter": true,
+    "default_units": "aviation",
+    "default_zoom": 7.5
+  }
+}
