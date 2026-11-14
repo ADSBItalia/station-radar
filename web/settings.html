@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Impostazioni Stazione · ADSBItalia Radar</title>
+  <title>Station Settings · ADSBItalia Radar</title>
   <link rel="icon" type="image/svg+xml" href="fiscaglia-favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,11 +29,7 @@
       --font-mono: 'JetBrains Mono', monospace;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       background-color: var(--bg-dark);
@@ -427,13 +423,13 @@
     <div class="brand-group">
       <img id="headerLogo" src="fiscaglia-favicon.svg" alt="Station Logo" class="brand-logo">
       <div class="brand-text">
-        <h1 id="headerStationTitle">Stazione ADS-B · Impostazioni</h1>
-        <p>ADSBItalia Station Edition · Control Panel</p>
+        <h1 id="headerStationTitle">Station Settings · Control Panel</h1>
+        <p>ADSBItalia Station Edition · Autonomous Radar</p>
       </div>
     </div>
     <div class="nav-actions">
-      <a href="index.html" class="btn btn-secondary">‹ Torna al Radar</a>
-      <button id="btnSaveTop" class="btn btn-primary" onclick="saveConfiguration()">💾 Salva Modifiche</button>
+      <a href="index.html" class="btn btn-secondary">‹ Back to Radar</a>
+      <button id="btnSaveTop" class="btn btn-primary" onclick="saveConfiguration()">💾 Save Settings</button>
     </div>
   </header>
 
@@ -442,69 +438,69 @@
     <!-- SECTION 1: ANTENNA & STATION INFO -->
     <section class="section-card">
       <div class="section-header">
-        <h2>📡 Antenna & Identità Stazione</h2>
-        <p>Personalizza il nome, le coordinate e i cerchi radar</p>
+        <h2>📡 Antenna & Station Identity</h2>
+        <p>Customize station name, antenna coordinates, and range rings</p>
       </div>
 
       <div class="form-grid">
         <div class="form-group">
-          <label for="stationName">Nome Stazione</label>
-          <input type="text" id="stationName" placeholder="Es. Stazione ADS-B di Roma">
-          <span class="hint">Mostrato nell'intestazione e nella scheda radar</span>
+          <label for="stationName">Station Name</label>
+          <input type="text" id="stationName" placeholder="e.g. Rome ADS-B Station">
+          <span class="hint">Displayed on top header and aircraft detail card</span>
         </div>
 
         <div class="form-group">
-          <label for="stationSubtitle">Sottotitolo / Ricevitore</label>
-          <input type="text" id="stationSubtitle" placeholder="Es. RTL-SDR 1090 MHz">
-          <span class="hint">Breve descrizione del setup</span>
+          <label for="stationSubtitle">Subtitle / Receiver Info</label>
+          <input type="text" id="stationSubtitle" placeholder="e.g. RTL-SDR 1090 MHz">
+          <span class="hint">Short description of your antenna setup</span>
         </div>
 
         <div class="form-group">
-          <label for="stationWebsite">Sito Web / Link Feeder</label>
+          <label for="stationWebsite">Website / Feeder Profile URL</label>
           <input type="text" id="stationWebsite" placeholder="https://adsbitalia.it">
-          <span class="hint">Aperto al click sul logo della stazione</span>
+          <span class="hint">Opened when clicking the station logo</span>
         </div>
 
         <div class="form-group">
-          <label for="stationLogo">Logo / Stemma Stazione (URL o File)</label>
+          <label for="stationLogo">Station Logo / Crest (URL or File)</label>
           <div style="display: flex; gap: 8px;">
             <input type="text" id="stationLogo" placeholder="images/custom-logo.png" style="flex: 1;">
             <label class="btn btn-secondary" style="margin: 0; padding: 10px 14px; cursor: pointer;">
-              📁 Carica
+              📁 Upload
               <input type="file" id="logoUploadInput" accept="image/*" style="display: none;" onchange="uploadLogoFile(this)">
             </label>
           </div>
-          <span class="hint">Carica una PNG/SVG o incolla l'URL</span>
+          <span class="hint">Upload a PNG/SVG or paste a direct image URL</span>
         </div>
 
         <div class="form-group">
-          <label for="stationLat">Latitudine Antenna (°N)</label>
+          <label for="stationLat">Antenna Latitude (°N)</label>
           <input type="number" id="stationLat" step="0.000001" placeholder="44.769651" onchange="updatePickerMarker()">
         </div>
 
         <div class="form-group">
-          <label for="stationLon">Longitudine Antenna (°E)</label>
+          <label for="stationLon">Antenna Longitude (°E)</label>
           <input type="number" id="stationLon" step="0.000001" placeholder="11.930735" onchange="updatePickerMarker()">
         </div>
 
         <div class="form-group">
-          <label for="stationAlt">Altitudine Antenna (Metri s.l.m.)</label>
+          <label for="stationAlt">Antenna Elevation (Meters AMSL)</label>
           <input type="number" id="stationAlt" step="1" placeholder="15">
         </div>
 
         <div class="form-group">
-          <label for="rangeRings">Cerchi di Portata (Range Rings in NM)</label>
+          <label for="rangeRings">Range Rings (Nautical Miles)</label>
           <input type="text" id="rangeRings" placeholder="25, 50, 100, 150, 200, 250">
-          <span class="hint">Valori in miglia nautiche separati da virgola</span>
+          <span class="hint">Comma-separated values in Nautical Miles</span>
         </div>
 
         <div class="form-group full-width">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <label>📍 Mappa Interattiva Coordinate</label>
-            <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="locateUserGps()">🎯 Usa la mia posizione GPS</button>
+            <label>📍 Interactive Coordinate Map</label>
+            <button type="button" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="locateUserGps()">🎯 Use my GPS location</button>
           </div>
           <div id="pickerMap"></div>
-          <span class="hint">Clicca o trascina il cursore sulla mappa per posizionare l'antenna</span>
+          <span class="hint">Click or drag the marker to position your antenna exactly</span>
         </div>
       </div>
     </section>
@@ -512,8 +508,8 @@
     <!-- SECTION 2: THEMES & COLORS -->
     <section class="section-card">
       <div class="section-header">
-        <h2>🎨 Temi & Personalizzazione Colori</h2>
-        <p>Scegli un preset avionico o personalizza i colori del radar</p>
+        <h2>🎨 Themes & Custom Colors</h2>
+        <p>Select an avionics preset or create your own custom theme</p>
       </div>
 
       <div class="presets-grid">
@@ -545,7 +541,7 @@
 
       <div class="form-grid">
         <div class="form-group">
-          <label>Colore Primario / Accent</label>
+          <label>Primary / Accent Color</label>
           <div class="color-picker-row">
             <input type="color" id="primaryColorPicker" value="#38bdf8" oninput="onColorChange()">
             <input type="text" id="primaryColorText" value="#38bdf8" onchange="onColorTextChange()">
@@ -553,7 +549,7 @@
         </div>
 
         <div class="form-group">
-          <label>Colore Cerchi Radar (Range Rings)</label>
+          <label>Range Rings Color</label>
           <div class="color-picker-row">
             <input type="color" id="ringColorPicker" value="#38bdf8" oninput="onColorChange()">
             <input type="text" id="ringColorText" value="#38bdf8" onchange="onColorTextChange()">
@@ -561,17 +557,17 @@
         </div>
 
         <div class="form-group">
-          <label>Opacità Cerchi Radar (0.1 - 1.0)</label>
+          <label>Range Rings Opacity (0.1 - 1.0)</label>
           <input type="number" id="ringOpacity" step="0.05" min="0.1" max="1.0" value="0.45">
         </div>
 
         <div class="form-group full-width">
-          <label>Anteprima Stile in Tempo Reale</label>
+          <label>Live Style Preview</label>
           <div class="preview-box" id="themePreviewBox">
-            <span class="preview-pill" id="prevPill1">📡 42 Aerei Ricevuti</span>
-            <span class="preview-pill" id="prevPill2">⚔️ 3 Militari</span>
-            <span class="preview-pill" id="prevPill3">⚠️ 7700 Emergenza</span>
-            <button class="btn btn-primary" id="prevBtn" style="pointer-events: none;">Pulsante Attivo</button>
+            <span class="preview-pill" id="prevPill1">📡 42 Tracked Aircraft</span>
+            <span class="preview-pill" id="prevPill2">⚔️ 3 Military</span>
+            <span class="preview-pill" id="prevPill3">⚠️ 7700 Emergency</span>
+            <button class="btn btn-primary" id="prevBtn" style="pointer-events: none;">Active Button</button>
           </div>
         </div>
       </div>
@@ -580,15 +576,15 @@
     <!-- SECTION 3: FEATURES & PHOTO ENGINE -->
     <section class="section-card">
       <div class="section-header">
-        <h2>📸 Motore Foto & Funzionalità</h2>
-        <p>Gestisci il caricamento delle foto reali, meteo e deviazioni</p>
+        <h2>📸 Photo Engine & Features</h2>
+        <p>Manage aircraft real photos, weather overlays and diversions</p>
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 14px;">
         <div class="toggle-row">
           <div class="toggle-info">
-            <h4>📸 Motore Foto Aeromobili in Tempo Reale</h4>
-            <p>Mostra la fotografia reale ad alta risoluzione del velivolo cliccato (Planespotters.net / ADSBItalia Proxy)</p>
+            <h4>📸 Live Aircraft Real Photo Engine</h4>
+            <p>Fetches real high-res aircraft photos (Planespotters.net / Airport-Data.com) with SVG silhouette fallback</p>
           </div>
           <label class="switch">
             <input type="checkbox" id="enablePhotos" checked>
@@ -598,8 +594,8 @@
 
         <div class="toggle-row">
           <div class="toggle-info">
-            <h4>🌧️ Radar Meteo Pioggia & Precipitazioni</h4>
-            <p>Abilita il layer radar precipitazioni in tempo reale sovrapposto alla mappa</p>
+            <h4>🌧️ Real-Time Weather Precipitation Radar</h4>
+            <p>Displays live rain and precipitation radar overlay on the map</p>
           </div>
           <label class="switch">
             <input type="checkbox" id="enableWeather" checked>
@@ -609,8 +605,8 @@
 
         <div class="toggle-row">
           <div class="toggle-info">
-            <h4>☁️ Copertura Nuvole Satellitari NASA GIBS</h4>
-            <p>Livello satellitare globale per visualizzare la copertura nuvolosa</p>
+            <h4>☁️ Global NASA GIBS Satellite Cloud Layer</h4>
+            <p>Worldwide satellite imagery showing real-time cloud coverage</p>
           </div>
           <label class="switch">
             <input type="checkbox" id="enableClouds" checked>
@@ -620,8 +616,8 @@
 
         <div class="toggle-row">
           <div class="toggle-info">
-            <h4>⚠️ Rilevamento Deviazioni di Volo (Flight Diversions)</h4>
-            <p>Mostra banner di allerta e destinazione alternativa quando un aereo dirotta su un altro aeroporto</p>
+            <h4>⚠️ Live Flight Diversion Alerts</h4>
+            <p>Detects flights diverting to alternate airports and shows avionics alert banners</p>
           </div>
           <label class="switch">
             <input type="checkbox" id="enableDiversions" checked>
@@ -631,8 +627,8 @@
 
         <div class="toggle-row">
           <div class="toggle-info">
-            <h4>⚔️ Filtri e Badge Tattici (Militari, Soccorso 118, Polizia)</h4>
-            <p>Database hex speciali per evidenziare traffico di stato, forze armate e antincendio</p>
+            <h4>⚔️ Tactical Filters (Military, Medevac, Police, Fire)</h4>
+            <p>Special database identifying armed forces, law enforcement, and emergency transports</p>
           </div>
           <label class="switch">
             <input type="checkbox" id="enableMilitary" checked>
@@ -645,21 +641,21 @@
     <!-- SECTION 4: DATA SOURCE -->
     <section class="section-card">
       <div class="section-header">
-        <h2>🔌 Sorgente Dati ADS-B</h2>
-        <p>Configura il collegamento al demotulatore locale o remoto</p>
+        <h2>🔌 ADS-B Data Source</h2>
+        <p>Configure connection to your local or network decoder</p>
       </div>
 
       <div class="form-grid">
         <div class="form-group">
-          <label for="aircraftUrl">URL Sorgente aircraft.json</label>
+          <label for="aircraftUrl">aircraft.json Source URL</label>
           <input type="text" id="aircraftUrl" placeholder="http://127.0.0.1/data/aircraft.json">
-          <span class="hint">Percorso readsb, dump1090-fa o ultrafeeder (es. /tar1090/data/aircraft.json)</span>
+          <span class="hint">Path to readsb, dump1090-fa or ultrafeeder data (e.g. /tar1090/data/aircraft.json)</span>
         </div>
 
         <div class="form-group">
-          <label for="pollInterval">Intervallo di Aggiornamento (ms)</label>
+          <label for="pollInterval">Polling Refresh Interval (ms)</label>
           <input type="number" id="pollInterval" step="100" min="500" max="10000" value="1000">
-          <span class="hint">1000 ms = 1 secondo (consigliato 1000-2000 ms)</span>
+          <span class="hint">1000 ms = 1 second (1000-2000 ms recommended)</span>
         </div>
       </div>
     </section>
@@ -670,8 +666,8 @@
   <div class="bottom-bar">
     <div id="toastMessage" class="toast"></div>
     <div style="display: flex; gap: 12px; margin-left: auto;">
-      <a href="index.html" class="btn btn-secondary">🚀 Apri Radar Live</a>
-      <button class="btn btn-primary" onclick="saveConfiguration()">💾 Salva Tutte le Impostazioni</button>
+      <a href="index.html" class="btn btn-secondary">🚀 Open Live Radar</a>
+      <button class="btn btn-primary" onclick="saveConfiguration()">💾 Save All Settings</button>
     </div>
   </div>
 
@@ -680,54 +676,12 @@
     let currentConfig = {};
 
     const THEME_PRESETS = {
-      cyan: {
-        primary: '#38bdf8',
-        bgDark: '#050c14',
-        bgPanel: 'rgba(7, 23, 36, 0.94)',
-        bgCard: 'rgba(11, 34, 52, 0.96)',
-        border: 'rgba(56, 189, 248, 0.22)',
-        glow: 'rgba(56, 189, 248, 0.45)'
-      },
-      emerald: {
-        primary: '#10b981',
-        bgDark: '#03140d',
-        bgPanel: 'rgba(4, 30, 20, 0.94)',
-        bgCard: 'rgba(7, 44, 29, 0.96)',
-        border: 'rgba(16, 185, 129, 0.25)',
-        glow: 'rgba(16, 185, 129, 0.45)'
-      },
-      amber: {
-        primary: '#f59e0b',
-        bgDark: '#140c03',
-        bgPanel: 'rgba(32, 19, 5, 0.94)',
-        bgCard: 'rgba(46, 27, 7, 0.96)',
-        border: 'rgba(245, 158, 11, 0.25)',
-        glow: 'rgba(245, 158, 11, 0.45)'
-      },
-      purple: {
-        primary: '#a855f7',
-        bgDark: '#0d0514',
-        bgPanel: 'rgba(25, 8, 38, 0.94)',
-        bgCard: 'rgba(38, 13, 58, 0.96)',
-        border: 'rgba(168, 85, 247, 0.25)',
-        glow: 'rgba(168, 85, 247, 0.45)'
-      },
-      monochrome: {
-        primary: '#e2e8f0',
-        bgDark: '#0b0f19',
-        bgPanel: 'rgba(20, 27, 41, 0.94)',
-        bgCard: 'rgba(30, 41, 59, 0.96)',
-        border: 'rgba(226, 232, 240, 0.25)',
-        glow: 'rgba(226, 232, 240, 0.35)'
-      },
-      crimson: {
-        primary: '#ef4444',
-        bgDark: '#140505',
-        bgPanel: 'rgba(35, 8, 8, 0.94)',
-        bgCard: 'rgba(55, 12, 12, 0.96)',
-        border: 'rgba(239, 68, 68, 0.25)',
-        glow: 'rgba(239, 68, 68, 0.45)'
-      }
+      cyan: { primary: '#38bdf8' },
+      emerald: { primary: '#10b981' },
+      amber: { primary: '#f59e0b' },
+      purple: { primary: '#a855f7' },
+      monochrome: { primary: '#e2e8f0' },
+      crimson: { primary: '#ef4444' }
     };
 
     async function loadConfiguration() {
@@ -776,7 +730,7 @@
       document.getElementById('enableMilitary').checked = feat.enable_military_filter !== false;
 
       // Update header logo & title
-      if (st.name) document.getElementById('headerStationTitle').textContent = `${st.name} · Impostazioni`;
+      if (st.name) document.getElementById('headerStationTitle').textContent = `${st.name} · Settings`;
       if (st.logo_url) document.getElementById('headerLogo').src = st.logo_url;
 
       applyLiveTheme(primary);
@@ -816,7 +770,7 @@
 
     function locateUserGps() {
       if (!navigator.geolocation) {
-        alert('Geolocalizzazione non supportata dal tuo browser');
+        alert('Geolocation is not supported by your browser');
         return;
       }
       navigator.geolocation.getCurrentPosition(
@@ -828,7 +782,7 @@
           updatePickerMarker();
         },
         (err) => {
-          alert('Impossibile ottenere la posizione GPS: ' + err.message);
+          alert('Could not get GPS position: ' + err.message);
         }
       );
     }
@@ -856,7 +810,7 @@
 
     function onColorTextChange() {
       const val = document.getElementById('primaryColorText').value;
-      document.getElementById('primaryColorPicker').value = val;
+      document.getElementById('primaryColorText').value = val;
       applyLiveTheme(val);
     }
 
@@ -866,7 +820,6 @@
       document.documentElement.style.setProperty('--border-highlight', primaryColor + 'aa');
       document.documentElement.style.setProperty('--bg-hover', primaryColor + '1f');
 
-      // Update preview elements
       const prevPill1 = document.getElementById('prevPill1');
       if (prevPill1) {
         prevPill1.style.borderColor = primaryColor;
@@ -885,19 +838,19 @@
       const formData = new FormData();
       formData.append('logo', file);
 
-      showToast('Caricamento logo in corso...', 'success');
+      showToast('Uploading logo...', 'success');
       try {
         const res = await fetch('/api/upload-logo', { method: 'POST', body: formData });
         const data = await res.json();
         if (data.ok) {
           document.getElementById('stationLogo').value = data.logo_url;
           document.getElementById('headerLogo').src = data.logo_url;
-          showToast('Logo caricato con successo!', 'success');
+          showToast('Logo uploaded successfully!', 'success');
         } else {
-          showToast('Errore caricamento logo: ' + data.error, 'error');
+          showToast('Error uploading logo: ' + data.error, 'error');
         }
       } catch (err) {
-        showToast('Errore di rete durante upload', 'error');
+        showToast('Network error during upload', 'error');
       }
     }
 
@@ -907,7 +860,7 @@
 
       const payload = {
         station: {
-          name: document.getElementById('stationName').value.trim() || 'Stazione ADS-B',
+          name: document.getElementById('stationName').value.trim() || 'ADS-B Station',
           subtitle: document.getElementById('stationSubtitle').value.trim(),
           website_url: document.getElementById('stationWebsite').value.trim(),
           logo_url: document.getElementById('stationLogo').value.trim(),
@@ -944,12 +897,12 @@
         });
         const result = await res.json();
         if (result.ok) {
-          showToast('✅ Tutte le impostazioni sono state salvate con successo!', 'success');
+          showToast('✅ All settings saved successfully!', 'success');
         } else {
-          showToast('❌ Errore durante il salvataggio: ' + result.error, 'error');
+          showToast('❌ Error saving settings: ' + result.error, 'error');
         }
       } catch (err) {
-        showToast('❌ Errore di connessione con il server', 'error');
+        showToast('❌ Server connection error', 'error');
       }
     }
 

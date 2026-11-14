@@ -1,119 +1,124 @@
-# 📡 ADSBItalia Station Radar (Community Edition)
+# 📡 ADSBItalia Station Radar
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi%20%7C%20Linux%20%7C%20Docker-brightgreen.svg)]()
 [![Python](https://img.shields.io/badge/Python-3.7%2B%20(Zero%20Dependencies)-yellow.svg)]()
-[![Network](https://img.shields.io/badge/Network-ADSBItalia.it-cyan.svg)](https://adsbitalia.it)
+[![Rust](https://img.shields.io/badge/Rust-Autonomous%20Resolver-orange.svg)]()
+[![Community](https://img.shields.io/badge/Community-ADSBItalia.it-cyan.svg)](https://adsbitalia.it)
 
-> **L'interfaccia radar avionica di nuova generazione per la tua stazione ADS-B.**  
-> Trasforma il tuo ricevitore locale (readsb, dump1090-fa, ultrafeeder o tar1090) in un radar da centro di controllo aereo moderno, fluido e completamente configurabile via web.
-
----
-
-## ✨ Caratteristiche Principali
-
-* 🎨 **Grafica Avionica Moderna**: Tema Dark ispirato ai cockpit e ai radar ATC di ultima generazione. Addio al vecchio look datato di dump1090 e tar1090.
-* ⚙️ **Pannello Impostazioni Web Integrato (`/settings`)**: Configura tutto direttamente dal browser, senza mai toccare file di configurazione via terminale:
-  * Nome, sottotitolo e logo personalizzato della stazione.
-  * **Mappa interattiva** con cursore trascinabile e pulsante GPS per impostare le coordinate esatte dell'antenna.
-  * Cerchi di portata (Range Rings in NM) personalizzabili.
-* 🌈 **Motore Temi Dinamico**:
-  * 💎 **Avionics Cyan** (Ciano neon cockpit)
-  * 🟢 **Radar Emerald** (Verde fosforo ATC militare)
-  * 🟠 **Amber Glow** (Ambra avionica Boeing)
-  * 🟣 **Stealth Night** (Viola cyberpunk)
-  * ⚪ **Arctic Mono** (Bianco high-contrast)
-  * 🔴 **Tactical Red** (Rosso operativo)
-  * **Color Picker personalizzato** per scegliere qualsiasi sfumatura tu preferisca!
-* 📸 **Motore Fotografico HD**: Caricamento in tempo reale della fotografia ad alta risoluzione del velivolo selezionato (Planespotters / flotta), con fallback automatico su sagoma vettoriale precisa per aerei militari o non censiti.
-* ⚠️ **Allerta Deviazioni di Volo (Flight Diversions)**: Rileva automaticamente se un aereo sta dirottando su un aeroporto alternato (es. causa nebbia o emergenza), mostrando l'allerta avionica e la rotta aggiornata (`STN ➔ ~~VCE~~ ➔ BLQ`).
-* 🌧️ **Radar Meteo & Nuvole Satellitari**: Overlay in tempo reale delle precipitazioni piovose e della copertura nuvolosa globale NASA GIBS.
-* ⚔️ **Filtri Tattici Speciali**: Filtra istantaneamente con un click voli Militari, Elisoccorso 118, Polizia/Carabinieri, Vigili del Fuoco, Voli di Stato e codici Squawk di emergenza (7700 / 7600).
-* ⚡ **Prestazioni Estreme & Zero Dipendenze**: Il server interno è scritto in puro Python (libreria standard) senza necessità di `pip install`. Consuma meno di 30 MB di RAM ed è perfetto per Raspberry Pi Zero/2/3/4/5 e MiniPC.
+> **Next-generation avionics radar interface and web control panel for single ADS-B stations.**  
+> Transform your local receiver (`readsb`, `dump1090-fa`, `ultrafeeder`, or `tar1090`) into a modern, fluid air traffic control display—fully configurable directly from your web browser with zero terminal editing.
 
 ---
 
-## 🚀 Installazione Rapida
+## ✨ Key Features
 
-### Metodo 1: Script 1-Click (Raspberry Pi OS / Debian / Ubuntu)
+* 🎨 **Modern Avionics Dark UI**: Cockpit-grade dark interface featuring precise directional aircraft silhouettes, animated vector tracks, tactical flight tables, and live telemetry stats.
+* ⚙️ **Web-Based Station Settings Panel (`/settings`)**: Configure your entire station directly in the browser:
+  * Station name, receiver subtitle, custom website link, and station logo upload.
+  * **Interactive coordinate map picker** with drag-and-drop antenna pin and a **one-click GPS location detection button**.
+  * Customizable Nautical Mile Range Rings (`25, 50, 100, 150, 200, 250 NM`).
+* 🌈 **Dynamic Theme & Color Engine**:
+  * 💎 **Avionics Cyan** (Neon cockpit cyan)
+  * 🟢 **Radar Emerald** (Military phosphor green)
+  * 🟠 **Amber Glow** (Warm Boeing amber)
+  * 🟣 **Stealth Night** (Cyberpunk purple)
+  * ⚪ **Arctic Mono** (High-contrast clean monochrome)
+  * 🔴 **Tactical Red** (Alert mission red)
+  * **Custom Color Pickers**: choose your exact accent color and range ring hue with real-time preview before saving!
+* 📸 **Direct Multi-Provider Aircraft Photo Engine**: High-resolution aircraft photos loaded dynamically via public CORS APIs (Planespotters.net and Airport-Data.com), with seamless fallback to detailed SVG silhouettes for private or uncataloged aircraft.
+* ⚠️ **Live Flight Diversion Detection**: Automatically detects when a flight diverts to an alternate airport (e.g. weather/emergency), displaying diversion alert banners and crossed-out route vectors (`STN ➔ ~~VCE~~ ➔ BLQ`).
+* 🌧️ **Live Weather Radar & Satellite Cloud Cover**: Real-time precipitation radar overlay and global NASA GIBS satellite cloud imagery.
+* ⚔️ **Tactical Quick Filters**: One-click filtering for Military, Air Ambulance / Medevac, Police & Law Enforcement, Firefighting, State & VIP transports, and Emergency Squawks (7700 / 7600).
+* 🦀 **Autonomous Rust Logo Resolver (`resolver/`)**: Bundled with an autonomous Rust engine (`adsbitalia-resolver`) and 12,900+ airline banners. When an unknown aircraft or operator is spotted, it automatically discovers, downloads, trims, and generates standard transparent vector banners locally on your machine!
+* ⚡ **100% Independent & Autonomous**: Zero API calls or bandwidth consumption on central servers. Fully self-contained, privacy-friendly, and uses less than 30 MB of RAM.
 
-Se hai un Raspberry Pi o un MiniPC con Linux e il tuo ricevitore (readsb o dump1090), incolla questo singolo comando nel terminale:
+---
+
+## 🚀 Quickstart Installation
+
+### Method 1: 1-Click Shell Installer (Raspberry Pi OS / Debian / Ubuntu)
+
+If you are running a local feeder on Linux or a Raspberry Pi, run this single command:
 
 ```bash
 bash <(curl -sL https://raw.githubusercontent.com/ADSBItalia/station-radar/main/install.sh)
 ```
 
-Lo script in automatico:
-1. Rileva il feeder ADS-B già presente sul sistema.
-2. Installa e avvia il servizio systemd ad avvio automatico (`adsbitalia-station.service`).
-3. Ti fornisce il link per aprire il tuo radar e il pannello impostazioni!
+The installer will automatically:
+1. Detect your existing local ADS-B feed (`readsb`, `dump1090-fa`, or `ultrafeeder`).
+2. Set up the lightweight station web server.
+3. Install and enable the `adsbitalia-station.service` systemd daemon for automatic startup.
+4. Provide the local URLs to open your radar and control panel!
 
 ---
 
-### Metodo 2: Docker & Docker Compose
+### Method 2: Docker & Docker Compose
 
-Ideale per chi usa **adsb.im**, Portainer, CasaOS, Unraid, Proxmox o stack a container.
+Ideal for users running Docker, Portainer, CasaOS, Unraid, or containerized feeder stacks (`adsb.im` / `ultrafeeder`).
 
-1. Clona il repository o crea un file `docker-compose.yml`:
+1. Create a `docker-compose.yml` file:
 
 ```yaml
 version: '3.8'
 
 services:
-  adsbitalia-station:
+  station-radar:
     image: adsbitalia/station-radar:latest
-    container_name: adsbitalia-station-radar
+    container_name: station-radar
     restart: unless-stopped
     ports:
       - "8088:8088"
     volumes:
       - ./config.json:/app/config.json
-      - ./images:/app/web/images/custom
+      - ./custom_images:/app/web/images/custom
+      # Optional: mount local readsb runtime directory:
+      # - /run/readsb:/run/readsb:ro
     environment:
       - PORT=8088
+      - PYTHONUNBUFFERED=1
 ```
 
-2. Avvia il container:
+2. Start the container:
 ```bash
 docker compose up -d
 ```
 
-3. Apri il browser all'indirizzo:
-   * **Radar Live**: `http://IP-DEL-TUO-SERVER:8088/`
-   * **Impostazioni**: `http://IP-DEL-TUO-SERVER:8088/settings`
+3. Open in your browser:
+   * **Live Radar**: `http://<YOUR-IP>:8088/`
+   * **Settings Panel**: `http://<YOUR-IP>:8088/settings`
 
 ---
 
-## 🛠️ Come Configurare la Tua Antenna
+## 🛠️ Configuring Your Station
 
-1. Apri la pagina **Impostazioni** (`http://tuo-ip:8088/settings`).
-2. Digita il **Nome della tua stazione** (es. *Stazione ADS-B di Milano*).
-3. Nella **Mappa Interattiva**, clicca sul punto esatto dove si trova la tua antenna (o usa il pulsante *🎯 Usa la mia posizione GPS*).
-4. Scegli il tuo **Tema di colori preferito** tra i preset o con il Color Picker.
-5. Clicca su **💾 Salva Tutte le Impostazioni**.
-6. Clicca su **🚀 Apri Radar Live** e goditi il tuo radar avionico personale!
+1. Open the **Settings Panel** at `http://<YOUR-IP>:8088/settings`.
+2. Enter your **Station Name** (e.g. *Rome ADS-B Station* or *Mike's Flight Radar*).
+3. On the **Interactive Map**, click or drag the marker to your antenna's exact location, or click *🎯 Use my GPS location*.
+4. Pick your favorite **Avionics Theme** or customize your accent colors.
+5. Click **💾 Save Settings**.
+6. Click **🚀 Open Live Radar** and enjoy your modern flight tracking dashboard!
 
 ---
 
-## 🔌 Compatibilità Sorgenti ADS-B
+## 🔌 Feeder Compatibility
 
-ADSBItalia Station Radar è nativamente compatibile con tutti i software di decodifica Mode-S / ADS-B:
-* **readsb** (standard adsb.im / ultrafeeder)
+ADSBItalia Station Radar works out of the box with all standard ADS-B / Mode-S decoders:
+* **readsb** (standard `adsb.im` / `ultrafeeder`)
 * **dump1090-fa** (FlightAware PiAware)
 * **dump1090-mutability**
-* **tar1090** (sorgente `/data/aircraft.json`)
-* Qualsiasi feed HTTP remoto che esporta un file `aircraft.json` conforme alle specifiche standard.
+* **tar1090** HTTP feeds (`/data/aircraft.json`)
+* Any custom receiver exposing standard `aircraft.json` over HTTP or file path.
 
 ---
 
-## 🌐 Unisciti alla Rete ADSBItalia
+## 🌐 Community & Feed Sharing
 
-Se hai una stazione ricevente e vuoi condividere i tuoi dati con la community italiana indipendente:
-👉 Visita [https://adsbitalia.it](https://adsbitalia.it) e scopri come inviare il tuo feed Beast in 2 minuti!
+ADSBItalia is an independent community flight tracking network. If you operate an ADS-B station in Italy or Europe and wish to contribute your feed:  
+👉 Visit [https://adsbitalia.it](https://adsbitalia.it) to learn how to feed in under 2 minutes!
 
 ---
 
-## 📄 Licenza
+## 📄 License
 
-Rilasciato sotto licenza [MIT](LICENSE). Libero per uso personale, didattico e per la community di radioamatori ed appassionati di volo.
-EOF
+Released under the [MIT License](LICENSE). Free for personal, educational, and amateur radio / aviation community use.

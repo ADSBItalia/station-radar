@@ -5,7 +5,7 @@
   <meta name="google" content="notranslate">
   <meta name="format-detection" content="telephone=no">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Fiscaglia ADS-B Station · Live Radar</title>
+  <title>ADS-B Station · Live Radar</title>
   
   <link rel="icon" type="image/svg+xml" href="fiscaglia-favicon.svg">
   <link rel="shortcut icon" href="fiscaglia-favicon.svg">
@@ -2573,57 +2573,57 @@
   <!-- Top Navigation Bar -->
   <header class="top-bar glass notranslate" translate="no">
     <!-- Brand -->
-    <a href="https://www.djrexishere.it" target="_blank" class="brand" title="Stazione ADS-B Fiscaglia (djrexishere.it)">
-      <img src="stazione-adsb-fiscaglia-transparent.png" class="brand-logo-img" alt="Stazione ADS-B Fiscaglia" style="height:36px; width:36px; border-radius:50%; object-fit:cover; border:1px solid rgba(56, 189, 248, 0.45);">
+    <a href="https://www.djrexishere.it" target="_blank" class="brand" title="ADS-B Station (djrexishere.it)">
+      <img src="stazione-adsb-fiscaglia-transparent.png" class="brand-logo-img" alt="ADS-B Station" style="height:36px; width:36px; border-radius:50%; object-fit:cover; border:1px solid rgba(56, 189, 248, 0.45);">
       <span class="brand-title" style="display:flex; flex-direction:column; line-height:1.15; margin-left:6px;">
         <span id="brandStationSubtitle" style="font-weight:700; color:#f0f6fc; font-size:13px; letter-spacing:0.02em;">Stazione ADS-B</span>
-        <span style="color:#38bdf8; font-weight:700; font-size:11px; letter-spacing:0.05em;">FISCAGLIA</span>
+        <span style="color:#38bdf8; font-weight:700; font-size:11px; letter-spacing:0.05em;">RADAR LIVE</span>
       </span>
     </a>
 
     <!-- Live Stat Ticker -->
     <div class="stat-ticker">
-      <div class="stat-pill" id="statTotalPill" title="Totale aeromobili ricevuti">
+      <div class="stat-pill" id="statTotalPill" title="Total tracked aircraft">
         <span id="statTotalLbl">Tot:</span>
         <span class="val" id="stat-total">0</span>
       </div>
-      <div class="stat-pill" id="statPosPill" title="Aeromobili con posizione GPS/MLAT">
+      <div class="stat-pill" id="statPosPill" title="Aircraft with GPS/MLAT position">
         <span id="statPosLbl">Pos:</span>
         <span class="val" id="stat-pos">0</span>
       </div>
-      <div class="stat-pill" id="statViewPill" title="Aeromobili nella visuale">
-        <span id="statViewLbl">Vista:</span>
+      <div class="stat-pill" id="statViewPill" title="Aircraft in current view">
+        <span id="statViewLbl">View:</span>
         <span class="val" id="stat-view" style="color:#38bdf8;">0</span>
       </div>
-      <div class="stat-pill military" id="statMilPill" title="Aeromobili militari">
+      <div class="stat-pill military" id="statMilPill" title="Military aircraft">
         <span id="statMilLbl">Mil:</span>
         <span class="val" id="stat-mil">0</span>
       </div>
     </div>
 
     <!-- Universal Top Navigation Back Button -->
-    <button class="top-back-btn notranslate" id="topNavBackBtn" title="Indietro" translate="no" style="display: none;">
+    <button class="top-back-btn notranslate" id="topNavBackBtn" title="Back" translate="no" style="display: none;">
       <span style="font-size: 1.15rem; font-weight: 900; line-height: 1;">‹</span>
-      <span id="topNavBackText">Indietro</span>
+      <span id="topNavBackText">Back</span>
     </button>
 
     <!-- Prominent Global Search Box (HEX, Reg, Callsign) -->
     <div class="search-box">
-      <input type="text" id="searchInput" placeholder="Volo, marche, HEX, città..." autocomplete="off" spellcheck="false">
+      <input type="text" id="searchInput" placeholder="Search flight, reg, HEX, type, airport..." autocomplete="off" spellcheck="false">
       <span class="search-icon">🔍</span>
       <div class="search-dropdown" id="searchDropdown"></div>
     </div>
 
     <!-- Quick Filter Pills -->
     <div class="quick-filter-pills">
-      <button class="filter-pill active" data-filter="all" id="btnFilterAll" title="Mostra tutti gli aeromobili">🌐 Tutti</button>
-      <button class="filter-pill" data-filter="military" id="btnFilterMil" title="Filtra aeromobili militari">⚔️ Mil</button>
-      <button class="filter-pill" data-filter="rescue" id="btnFilterRescue" title="Filtra soccorso sanitario">🚑 Soccorso</button>
-      <button class="filter-pill" data-filter="police" id="btnFilterPolice" title="Filtra forze dell'ordine">👮 Polizia</button>
-      <button class="filter-pill" data-filter="fire" id="btnFilterFire" title="Filtra vigili del fuoco / antincendio">🔥 Antincendio</button>
-      <button class="filter-pill" data-filter="gov" id="btnFilterGov" title="Filtra voli di stato e governativi">👑 Gov</button>
-      <button class="filter-pill" data-filter="emergency" id="btnFilterEmergency" title="Filtra Squawk 7700 (Emergenza) / 7600 (Avaria radio) / 7500">⚠️ 7700 / 7600</button>
-      <button class="filter-pill" id="btnFilterReset" title="Reimposta tutti i filtri e vista mappa">🔄 Reset</button>
+      <button class="filter-pill active" data-filter="all" id="btnFilterAll" title="Show all aircraft">🌐 All</button>
+      <button class="filter-pill" data-filter="military" id="btnFilterMil" title="Filter military aircraft">⚔️ Mil</button>
+      <button class="filter-pill" data-filter="rescue" id="btnFilterRescue" title="Filter air ambulance / rescue">🚑 Rescue</button>
+      <button class="filter-pill" data-filter="police" id="btnFilterPolice" title="Filter law enforcement">👮 Police</button>
+      <button class="filter-pill" data-filter="fire" id="btnFilterFire" title="Filter firefighting / aerial fire">🔥 Fire</button>
+      <button class="filter-pill" data-filter="gov" id="btnFilterGov" title="Filter state and government flights">👑 Gov</button>
+      <button class="filter-pill" data-filter="emergency" id="btnFilterEmergency" title="Filter Emergency 7700 / Radio Failure 7600 / 7500">⚠️ 7700 / 7600</button>
+      <button class="filter-pill" id="btnFilterReset" title="Reset all filters and map view">🔄 Reset</button>
     </div>
 
     <!-- Header Actions Right -->
@@ -2632,17 +2632,17 @@
       <button class="btn-action lang-btn" id="btnLangToggle" title="Cambia Lingua / Switch Language">
         <span id="mapLangFlag">🇮🇹</span><span class="btn-label" id="mapLangText" style="display:inline !important; font-weight:700; font-family:var(--font-mono); font-size:11px;">IT</span>
       </button>
-      <button class="btn-action" id="btnWeatherRadar" title="Attiva/Disattiva Radar Meteo">
+      <button class="btn-action" id="btnWeatherRadar" title="Toggle Weather Precipitation Radar">
         <span>📡</span><span class="btn-label" id="btnWeatherRadarLbl">Radar</span>
       </button>
-      <button class="btn-action" id="btnWeatherClouds" title="Attiva/Disattiva Copertura Nuvole Satellitare (NASA GIBS)">
+      <button class="btn-action" id="btnWeatherClouds" title="Toggle Global Satellite Clouds (NASA GIBS)">
         <span>☁️</span><span class="btn-label" id="btnWeatherCloudsLbl">Nubi</span>
       </button>
-      <button class="btn-action" id="btnIconScaleToggle" title="Dimensione Icone Aerei: Normale / Grande / XL / Compatto">
+      <button class="btn-action" id="btnIconScaleToggle" title="Aircraft Icon Size: Normal / Large / XL / Compact">
         <span>✈️</span><span id="iconScaleText" class="btn-label">Icone: Norm</span>
       </button>
       <a href="settings.html" class="btn-action" id="btnSettingsLink" title="Impostazioni Stazione e Antenna" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center; font-size:15px;">⚙️</a>
-    <button class="btn-action unit-btn" id="btnUnitToggle" title="Cambia Unità: Aviazione (ft/kts) vs Metrico (m/km/h)">
+    <button class="btn-action unit-btn" id="btnUnitToggle" title="Toggle Units: Aviation (ft/kts) vs Metric (m/km/h)">
         <span id="unitToggleText">U (kts)</span>
       </button>
       <button class="btn-action" id="btnHome" title="Reimposta Vista Mappa (Centro Stazione)">
@@ -2680,9 +2680,9 @@
     <!-- Station Branding Banner -->
     <div class="sidebar-header-branding" style="padding: 12px 14px; background: linear-gradient(135deg, rgba(7, 23, 36, 0.95), rgba(11, 34, 52, 0.98)); border-bottom: 1px solid rgba(56, 189, 248, 0.16); display:flex; align-items:center; justify-content:space-between; gap:10px;">
       <div style="display:flex; align-items:center; gap:10px;">
-        <img src="stazione-adsb-fiscaglia-transparent.png" alt="Stazione ADS-B Fiscaglia" style="height:42px; width:42px; border-radius:50%; border:1px solid rgba(56, 189, 248, 0.35);">
+        <img src="stazione-adsb-fiscaglia-transparent.png" alt="ADS-B Station" style="height:42px; width:42px; border-radius:50%; border:1px solid rgba(56, 189, 248, 0.35);">
         <div>
-          <div id="sideStationTitle" style="font-size:13px; font-weight:700; color:#f0f6fc;">Stazione ADS-B di Fiscaglia</div>
+          <div id="sideStationTitle" style="font-size:13px; font-weight:700; color:#f0f6fc;">ADS-B Station</div>
           <div style="font-size:11px; color:#9eb7c5; font-family:'JetBrains Mono',monospace;">FE · 44.7697°N, 11.9307°E</div>
         </div>
       </div>
@@ -2708,7 +2708,7 @@
 
     <!-- Signal Breakdown & Filter Tabs (ALL, ADS-B, Mode-S, MLAT) -->
     <div class="list-signal-tabs">
-      <button class="signal-tab active" data-signal="all" title="Mostra tutti gli aeromobili">
+      <button class="signal-tab active" data-signal="all" title="Show all aircraft">
         <span class="tab-label" id="lblSigAll">TUTTI</span>
         <span class="tab-count" id="countSigAll">0</span>
       </button>
@@ -2748,10 +2748,10 @@
           <tr>
             <th id="thFlightReg">Volo / Marche</th>
             <th id="thSignal">Segnale</th>
-            <th id="thType">Tipo</th>
-            <th id="thRoute">Rotta</th>
-            <th id="thAlt">Quota</th>
-            <th id="thSpeed">Velocità</th>
+            <th id="thType">Type</th>
+            <th id="thRoute">Track</th>
+            <th id="thAlt">Altitude</th>
+            <th id="thSpeed">Speed</th>
             <th id="thSquawk">Squawk</th>
           </tr>
         </thead>
@@ -2769,13 +2769,13 @@
       <img id="cardPhoto" class="card-photo" alt="Aircraft photo" referrerpolicy="no-referrer">
       <div id="cardPhotoFallback" class="card-photo-fallback">
         <div class="photo-spinner"></div>
-        <span id="cardSearchingPhotoText" style="font-size:0.78rem;">Ricerca foto aeromobile...</span>
+        <span id="cardSearchingPhotoText" style="font-size:0.78rem;">Searching aircraft photo...</span>
       </div>
       <div id="cardPhotoCredit" class="card-photo-credit"></div>
     </a>
 
     <div class="card-header-bar">
-      <button class="panel-back-btn" id="cardBackBtn" title="Torna indietro">‹ Indietro</button>
+      <button class="panel-back-btn" id="cardBackBtn" title="Back">‹ Back</button>
       <div style="flex: 1; min-width: 0;">
         <div class="card-callsign">
           <img id="cardFlag" class="flag-icon" src="" alt="Flag" style="display: none;">
@@ -3497,11 +3497,11 @@
     let currentSignalFilter = 'all';
 
     // Internationalization & Language Switcher (Italian 🇮🇹 / English 🇬🇧)
-    let currentMapLang = localStorage.getItem('adsb_lang') || 'it';
+    let currentMapLang = localStorage.getItem('adsb_lang') || 'en';
 
     const I18N_MAP = {
       it: {
-        pageTitle: "Stazione ADS-B Fiscaglia · Radar Live",
+        pageTitle: "ADS-B Station · Radar Live",
         brandSubtitle: "Stazione ADS-B",
         statTot: "Tot:",
         statTotTitle: "Totale aeromobili ricevuti dall'antenna",
@@ -3538,7 +3538,7 @@
         btnCoverageTitle: "Mostra/Nascondi Sagoma Portata Ricezione Antenna (24h)",
         btnGraphs: "Grafici",
         btnGraphsTitle: "Telemetria & Grafici Prestazioni",
-        sideStation: "Stazione ADS-B di Fiscaglia",
+        sideStation: "ADS-B Station",
         panelAircraft: "Aerei in Vista",
         sigAll: "TUTTI",
         sigAdsb: "ADS-B",
@@ -3567,7 +3567,7 @@
         histToday: "Oggi (Live)",
         histYesterday: "Ieri",
         histCustom: "📅 Data",
-        cardBack: "‹ Indietro",
+        cardBack: "‹ Back",
         flag: "🇮🇹",
         langCode: "IT",
         toastSwitched: "Lingua impostata: Italiano 🇮🇹"

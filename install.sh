@@ -30,17 +30,17 @@ cat << "EOF"
                                   STATION EDITION v1.0
 EOF
 echo -e "${NC}"
-echo -e "${BOLD}Installazione Automatica ADSBItalia Station Radar${NC}"
+echo -e "${BOLD}ADSBItalia Station Radar - Automatic Installer${NC}"
 echo -e "------------------------------------------------------------------"
 
 # Check Root / Sudo
 if [ "$EUID" -ne 0 ]; then
-    echo -e "${YELLOW}[!] Questo script richiede i privilegi di root. Rieseguo con sudo...${NC}"
+    echo -e "${YELLOW}[!] Root privileges required. Re-running with sudo...${NC}"
     exec sudo bash "$0" "$@"
 fi
 
 # Detect Package Manager
-echo -e "\n${CYAN}[1/5] Verifica dipendenze di sistema...${NC}"
+echo -e "\n${CYAN}[1/5] Checking system dependencies...${NC}"
 if command -v apt-get &> /dev/null; then
     apt-get update -qq
     apt-get install -y -qq python3 curl git > /dev/null
@@ -49,34 +49,34 @@ elif command -v dnf &> /dev/null; then
 elif command -v apk &> /dev/null; then
     apk add --no-cache python3 curl git > /dev/null
 else
-    echo -e "${RED}[X] Gestore pacchetti non supportato automaticamente. Assicurati che python3, curl e git siano installati.${NC}"
+    echo -e "${YELLOW}[i] Unsupported package manager. Please ensure python3, curl and git are installed.${NC}"
 fi
-echo -e "${GREEN}[✓] Dipendenze verificate (Python 3, curl, git).${NC}"
+echo -e "${GREEN}[✓] Dependencies verified (Python 3, curl, git).${NC}"
 
 # Detect Local ADS-B Feeder
-echo -e "\n${CYAN}[2/5] Rilevamento sorgente dati ADS-B locale...${NC}"
+echo -e "\n${CYAN}[2/5] Detecting local ADS-B data feed...${NC}"
 LOCAL_DATA_SOURCE="http://127.0.0.1/data/aircraft.json"
 
 if [ -f "/run/readsb/aircraft.json" ]; then
-    echo -e "${GREEN}[✓] Rilevato readsb locale (/run/readsb/aircraft.json)${NC}"
+    echo -e "${GREEN}[✓] Detected local readsb (/run/readsb/aircraft.json)${NC}"
     LOCAL_DATA_SOURCE="/run/readsb/aircraft.json"
 elif [ -f "/run/dump1090-fa/aircraft.json" ]; then
-    echo -e "${GREEN}[✓] Rilevato dump1090-fa locale (/run/dump1090-fa/aircraft.json)${NC}"
+    echo -e "${GREEN}[✓] Detected local dump1090-fa (/run/dump1090-fa/aircraft.json)${NC}"
     LOCAL_DATA_SOURCE="/run/dump1090-fa/aircraft.json"
 elif [ -f "/run/dump1090/aircraft.json" ]; then
-    echo -e "${GREEN}[✓] Rilevato dump1090 locale (/run/dump1090/aircraft.json)${NC}"
+    echo -e "${GREEN}[✓] Detected local dump1090 (/run/dump1090/aircraft.json)${NC}"
     LOCAL_DATA_SOURCE="/run/dump1090/aircraft.json"
 elif [ -d "/var/www/html/tar1090" ]; then
-    echo -e "${GREEN}[✓] Rilevato stack tar1090 (porta HTTP locale)${NC}"
+    echo -e "${GREEN}[✓] Detected local tar1090 stack (local HTTP port)${NC}"
     LOCAL_DATA_SOURCE="http://127.0.0.1/tar1090/data/aircraft.json"
 else
-    echo -e "${YELLOW}[i] Nessun readsb locale diretto trovato, userò sorgente HTTP predefinita (configurabile da web).${NC}"
+    echo -e "${YELLOW}[i] No direct local readsb path found; using default HTTP source (configurable via web).${NC}"
 fi
 
 # Download / Clone Files
-echo -e "\n${CYAN}[3/5] Configurazione cartella applicazione in ${INSTALL_DIR}...${NC}"
+echo -e "\n${CYAN}[3/5] Setting up application directory in ${INSTALL_DIR}...${NC}"
 if [ -d "$INSTALL_DIR" ]; then
-    echo -e "${YELLOW}[i] Aggiornamento installazione esistente...${NC}"
+    echo -e "${YELLOW}[i] Updating existing installation...${NC}"
     systemctl stop "$SERVICE_NAME" 2>/dev/null || true
 fi
 
@@ -88,9 +88,9 @@ if [ -d ".git" ]; then
     git pull -q || true
 else
     if command -v git &> /dev/null && git clone -q "$REPO_URL" "$INSTALL_DIR" 2>/dev/null; then
-        echo -e "${GREEN}[✓] Repository clonato con successo.${NC}"
+        echo -e "${GREEN}[✓] Repository cloned successfully.${NC}"
     else
-        echo -e "${YELLOW}[i] Clone da git non riuscito, estrazione pacchetto locale in corso...${NC}"
+        echo -e "${YELLOW}[i] Git clone failed, falling back to local files...${NC}"
     fi
 fi
 
@@ -99,12 +99,12 @@ mkdir -p "$INSTALL_DIR/web" "$INSTALL_DIR/server" "$INSTALL_DIR/web/images"
 
 # Create Initial Config if missing
 if [ ! -f "$INSTALL_DIR/config.json" ]; then
-    echo -e "${CYAN}[i] Creazione configurazione iniziale personalizzata...${NC}"
+    echo -e "${CYAN}[i] Creating default configuration...${NC}"
     cat << EOF > "$INSTALL_DIR/config.json"
 {
   "station": {
-    "name": "Stazione ADS-B",
-    "subtitle": "Ricevitore Locale 1090 MHz",
+    "name": "ADS-B Station",
+    "subtitle": "Local 1090 MHz Receiver",
     "logo_url": "fiscaglia-favicon.svg",
     "website_url": "https://adsbitalia.it",
     "lat": 44.769651,
@@ -131,7 +131,7 @@ if [ ! -f "$INSTALL_DIR/config.json" ]; then
   },
   "features": {
     "enable_photos": true,
-    "photo_provider": "adsbitalia_proxy",
+    "photo_provider": "direct",
     "enable_weather_radar": true,
     "enable_clouds": true,
     "enable_diversions": true,
@@ -146,7 +146,7 @@ fi
 chmod +x "$INSTALL_DIR/server/server.py" 2>/dev/null || true
 
 # Setup Systemd Service
-echo -e "\n${CYAN}[4/5] Installazione servizio di avvio automatico (systemd)...${NC}"
+echo -e "\n${CYAN}[4/5] Installing systemd background service...${NC}"
 cat << EOF > "/etc/systemd/system/${SERVICE_NAME}"
 [Unit]
 Description=ADSBItalia Station Radar Server
@@ -168,16 +168,16 @@ EOF
 
 systemctl daemon-reload
 systemctl enable --now "$SERVICE_NAME"
-echo -e "${GREEN}[✓] Servizio ${SERVICE_NAME} abilitato e avviato.${NC}"
+echo -e "${GREEN}[✓] Service ${SERVICE_NAME} enabled and running.${NC}"
 
 # Detect Host IP
 HOST_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "127.0.0.1")
 
 echo -e "\n${GREEN}${BOLD}==================================================================${NC}"
-echo -e "${GREEN}${BOLD} 🎉 INSTALLAZIONE COMPLETATA CON SUCCESSO!${NC}"
+echo -e "${GREEN}${BOLD} 🎉 INSTALLATION COMPLETED SUCCESSFULLY!${NC}"
 echo -e "${GREEN}${BOLD}==================================================================${NC}"
-echo -e "\n${BOLD}Puoi ora accedere al tuo Radar Station da qualsiasi browser:${NC}"
-echo -e "  📡 ${CYAN}${BOLD}Radar Live:${NC}         http://${HOST_IP}:${PORT}/"
-echo -e "  ⚙️  ${CYAN}${BOLD}Pannello Opzioni:${NC}   http://${HOST_IP}:${PORT}/settings"
-echo -e "\n${YELLOW}Consiglio: Apri subito la pagina Impostazioni per inserire il nome della tua stazione e le coordinate esatte della tua antenna!${NC}\n"
+echo -e "\n${BOLD}Access your Station Radar in any browser:${NC}"
+echo -e "  📡 ${CYAN}${BOLD}Live Radar:${NC}     http://${HOST_IP}:${PORT}/"
+echo -e "  ⚙️  ${CYAN}${BOLD}Settings:${NC}       http://${HOST_IP}:${PORT}/settings"
+echo -e "\n${YELLOW}Tip: Open Settings now to customize your station name, antenna coordinates, and avionics theme!${NC}\n"
 EOF
