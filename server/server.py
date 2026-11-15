@@ -20,21 +20,23 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 import cgi
 
 PORT = int(os.environ.get("PORT", 8088))
-ENV_FEEDER_URL = os.environ.get("FEEDER_URL")
+ENV_TAR1090_URL = os.environ.get("TAR1090_URL")
+ENV_FEEDER_URL = os.environ.get("FEEDER_URL") or ENV_TAR1090_URL
 ENV_AIRCRAFT_URL = os.environ.get("AIRCRAFT_URL")
 ENV_RECEIVER_URL = os.environ.get("RECEIVER_URL")
 
-# Combine and auto-derive endpoints if FEEDER_URL or AIRCRAFT_URL is specified
+# Combine and auto-derive endpoints if TAR1090_URL, FEEDER_URL or AIRCRAFT_URL is specified
 if ENV_FEEDER_URL:
-    clean_base = ENV_FEEDER_URL.rstrip("/")
-    if not clean_base.endswith("/data"):
-        data_base = f"{clean_base}/data"
+    clean = ENV_FEEDER_URL.rstrip("/")
+    if clean.endswith("/aircraft.json"):
+        ENV_AIRCRAFT_URL = clean
+        ENV_RECEIVER_URL = clean.replace("aircraft.json", "receiver.json")
+    elif clean.endswith("/data"):
+        ENV_AIRCRAFT_URL = f"{clean}/aircraft.json"
+        ENV_RECEIVER_URL = f"{clean}/receiver.json"
     else:
-        data_base = clean_base
-    if not ENV_AIRCRAFT_URL:
-        ENV_AIRCRAFT_URL = f"{data_base}/aircraft.json"
-    if not ENV_RECEIVER_URL:
-        ENV_RECEIVER_URL = f"{data_base}/receiver.json"
+        ENV_AIRCRAFT_URL = f"{clean}/data/aircraft.json"
+        ENV_RECEIVER_URL = f"{clean}/data/receiver.json"
 elif ENV_AIRCRAFT_URL and not ENV_RECEIVER_URL:
     if "aircraft.json" in ENV_AIRCRAFT_URL:
         ENV_RECEIVER_URL = ENV_AIRCRAFT_URL.replace("aircraft.json", "receiver.json")

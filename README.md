@@ -81,7 +81,7 @@ services:
 ```
 
 #### Case B: readsb inside a Container (Ultrafeeder / Docker Stack):
-If readsb runs inside another container (e.g. Ultrafeeder), **no host volumes are needed**! Simply specify a single parameter `FEEDER_URL`:
+If readsb runs inside another container (e.g. Ultrafeeder), **no host volumes are needed**! Simply specify a single parameter `TAR1090_URL` (or `FEEDER_URL`):
 
 ```yaml
 version: '3.8'
@@ -96,10 +96,10 @@ services:
     environment:
       - PORT=8088
       - PYTHONUNBUFFERED=1
-      # Single parameter: automatically deduces aircraft.json and receiver.json!
-      - FEEDER_URL=http://ultrafeeder
+      # Single parameter: automatically connects to aircraft.json and receiver.json!
+      - TAR1090_URL=http://ultrafeeder/
 ```
-*(Tip: You can also specify full URLs with `AIRCRAFT_URL=http://ultrafeeder/data/aircraft.json` or `http://host.docker.internal:8080/data/aircraft.json`).*
+*(Tip: Works with any tar1090, readsb, or ultrafeeder container URL, e.g. `TAR1090_URL=http://ultrafeeder/` or `http://host.docker.internal:8080/`).*
 
 Start the container:
 ```bash
