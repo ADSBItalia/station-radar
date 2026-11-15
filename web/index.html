@@ -6215,7 +6215,7 @@
       return null;
     }
 
-    function findClosestAirport(lon, lat, maxDistNm = 45) {
+    function findClosestAirport(lon, lat, maxDistNm = 45, onlySuitableDiversion = false) {
       if (lon == null || lat == null) return null;
       let closest = null;
       let minD = maxDistNm;
@@ -6224,18 +6224,39 @@
       if (cachedAirportsGeoJSON && Array.isArray(cachedAirportsGeoJSON.features)) {
         for (const feat of cachedAirportsGeoJSON.features) {
           if (!feat.geometry || !feat.geometry.coordinates) continue;
+          const p = feat.properties || {};
+
+          // Extract valid codes
+          const iata = (typeof p.iata === 'string' && /^[A-Z]{3}$/i.test(p.iata.trim()) && p.iata.trim().toUpperCase() !== '---')
+            ? p.iata.trim().toUpperCase() : null;
+          const icao = (typeof p.icao === 'string' && /^[A-Z0-9]{4}$/i.test(p.icao.trim()) && !p.icao.includes('-'))
+            ? p.icao.trim().toUpperCase() : null;
+
+          if (onlySuitableDiversion) {
+            // Must have a genuine 3-letter IATA code OR official 4-letter ICAO code (no dashes/local grass strip IDs)
+            if (!iata && !icao) continue;
+            const pType = (p.type || '').toLowerCase();
+            // Disqualify heliports, closed airfields, seaplane bases, balloonports
+            if (['heliport', 'closed', 'seaplane', 'balloonport'].includes(pType)) continue;
+            // Disqualify small ultralight/grass airfields unless commercial IATA or certified military
+            if (pType === 'small' && !iata && !p.mil) continue;
+          }
+
           const [aLon, aLat] = feat.geometry.coordinates;
-          const d = calculateDistanceNm(lat, lon, aLat, aLon);
+          const d = (typeof calculateDistanceNm === 'function')
+            ? calculateDistanceNm(lat, lon, aLat, aLon)
+            : (typeof haversineDistNm === 'function' ? haversineDistNm(lat, lon, aLat, aLon) : null);
+
           if (d != null && d < minD) {
             minD = d;
-            const p = feat.properties || {};
+            const validCode = iata || icao || p.iata || p.icao;
             closest = {
-              iata: p.iata || p.icao,
-              icao: p.icao,
-              name: p.name,
-              location: p.city ? `${p.city}, ${p.country || ''}` : p.name,
+              iata: validCode,
+              icao: icao || p.icao || validCode,
+              name: p.name || validCode,
+              location: p.city ? `${p.city}, ${p.country || ''}` : (p.name || validCode),
               coords: [aLon, aLat],
-              distNm: Math.round(d)
+              distNm: Math.round(d * 10) / 10
             };
           }
         }
@@ -6244,8 +6265,10 @@
       // 2. Fallback to airport coordinates lookup table
       if (!closest) {
         for (const [code, coords] of Object.entries(AIRPORT_COORDS_FALLBACK)) {
-          if (code.length === 4) continue;
-          const d = calculateDistanceNm(lat, lon, coords[1], coords[0]);
+          if (onlySuitableDiversion && code.length !== 3 && code.length !== 4) continue;
+          const d = (typeof calculateDistanceNm === 'function')
+            ? calculateDistanceNm(lat, lon, coords[1], coords[0])
+            : (typeof haversineDistNm === 'function' ? haversineDistNm(lat, lon, coords[1], coords[0]) : null);
           if (d != null && d < minD) {
             minD = d;
             closest = {
@@ -6254,7 +6277,7 @@
               name: code,
               location: code,
               coords: coords,
-              distNm: Math.round(d)
+              distNm: Math.round(d * 10) / 10
             };
           }
         }
@@ -6263,8 +6286,10 @@
     }
 
     function detectFlightDiversion(ac, r) {
-      if (CONFIG.enableDiversions === false) return null;
+      if (typeof CONFIG !== 'undefined' && CONFIG.enableDiversions === false) return null;
       if (!r || !r._airports || r._airports.length < 2) return null;
+
+      // 1. Explicit diversion already confirmed by route service
       if (r.diverted_to) {
         const isG = !!(ac && (ac.ground || ac.alt_baro === 'ground' || (typeof ac.alt_baro === 'number' && ac.alt_baro < 1500)));
         return {
@@ -6272,6 +6297,7 @@
           airport: r.diverted_to
         };
       }
+
       if (!ac || ac.lat == null || ac.lon == null) return null;
       const lat = Number(ac.lat);
       const lon = Number(ac.lon);
@@ -6279,40 +6305,97 @@
 
       const origin = r._airports[0];
       const dest = r._airports[r._airports.length - 1];
-      const oIata = (origin.iata || origin.icao || '').toUpperCase();
-      const dIata = (dest.iata || dest.icao || '').toUpperCase();
+      const oIata = (origin.iata || origin.icao || '').toUpperCase().trim();
+      const dIata = (dest.iata || dest.icao || '').toUpperCase().trim();
 
       const dCoords = typeof getAirportCoords === 'function' ? getAirportCoords(dest) : null;
       if (!dCoords) return null;
 
-      const distToDest = calculateDistanceNm(lat, lon, dCoords[1], dCoords[0]);
+      const distToDest = (typeof calculateDistanceNm === 'function')
+        ? calculateDistanceNm(lat, lon, dCoords[1], dCoords[0])
+        : (typeof haversineDistNm === 'function' ? haversineDistNm(lat, lon, dCoords[1], dCoords[0]) : null);
+
       if (distToDest == null) return null;
 
-      const closest = typeof findClosestAirport === 'function' ? findClosestAirport(lon, lat, 35) : null;
+      // Find closest certified commercial / military diversion alternate (max 20 NM)
+      const closest = typeof findClosestAirport === 'function' ? findClosestAirport(lon, lat, 20, true) : null;
       if (!closest) return null;
 
-      const cIata = (closest.iata || closest.icao || '').toUpperCase();
+      const cIata = (closest.iata || closest.icao || '').toUpperCase().trim();
+      // Alternate cannot be origin or destination
       if (!cIata || cIata === dIata || cIata === oIata) return null;
 
       const alt = ac.alt_baro;
-      const isGround = !!ac.ground || alt === 'ground' || (typeof alt === 'number' && alt < 500);
+      const isGround = !!ac.ground || alt === 'ground' || (typeof alt === 'number' && alt < 400 && (ac.gs == null || ac.gs < 50));
 
+      // CASE A: On ground at an alternate airport (must be physically on airport grounds <= 3.5 NM)
       if (isGround) {
-        return {
-          status: 'DIVERTED',
-          airport: closest
-        };
-      }
-
-      if (typeof alt === 'number' && alt < 12000 && distToDest > 30 && (closest.distNm == null || closest.distNm <= 25)) {
-        const vrate = ac.baro_rate || 0;
-        if (vrate <= 100 || alt < 6000) {
-          const status = (alt < 1500 && (ac.gs == null || ac.gs < 140)) ? 'DIVERTED' : 'DIVERTING';
+        if (closest.distNm <= 3.5 && distToDest > 25) {
           return {
-            status: status,
+            status: 'DIVERTED',
             airport: closest
           };
         }
+        return null;
+      }
+
+      // CASE B: In flight
+      if (typeof alt !== 'number') return null;
+
+      const vrate = (ac.baro_rate != null) ? ac.baro_rate : (ac.geom_rate || 0);
+      const isEmergencySquawk = (ac.squawk === '7700');
+
+      // Rule 1: Level cruise or climb is NEVER a diversion (unless squawking 7700 emergency)
+      // Low-altitude regional/military flights cruise between 3,000 and 15,000 ft.
+      if (!isEmergencySquawk && vrate >= -250 && alt > 2500) {
+        return null;
+      }
+
+      // Rule 2: Must be far from scheduled destination (> 35 NM)
+      if (distToDest <= 35) {
+        return null; // Normal descent towards destination
+      }
+
+      // Distance from origin check: ignore takeoff climbout / local circuit
+      const oCoords = typeof getAirportCoords === 'function' ? getAirportCoords(origin) : null;
+      if (oCoords) {
+        const distToOrig = (typeof calculateDistanceNm === 'function')
+          ? calculateDistanceNm(lat, lon, oCoords[1], oCoords[0])
+          : (typeof haversineDistNm === 'function' ? haversineDistNm(lat, lon, oCoords[1], oCoords[0]) : null);
+        if (distToOrig != null && distToOrig < 25 && !isEmergencySquawk) {
+          return null;
+        }
+      }
+
+      // Rule 3: Heading towards destination check
+      // If the aircraft is flying within 45° towards destination at cruise altitude, it is not diverting
+      if (ac.track != null && !isEmergencySquawk && alt >= 3500) {
+        const toRad = deg => (deg * Math.PI) / 180;
+        const toDeg = rad => (rad * 180) / Math.PI;
+        const y = Math.sin(toRad(dCoords[0] - lon)) * Math.cos(toRad(dCoords[1]));
+        const x = Math.cos(toRad(lat)) * Math.sin(toRad(dCoords[1])) -
+                  Math.sin(toRad(lat)) * Math.cos(toRad(dCoords[1])) * Math.cos(toRad(dCoords[0] - lon));
+        const bearingToDest = (toDeg(Math.atan2(y, x)) + 360) % 360;
+        let angleDiff = Math.abs(ac.track - bearingToDest);
+        if (angleDiff > 180) angleDiff = 360 - angleDiff;
+        if (angleDiff < 45) {
+          return null; // Aircraft is heading directly along its route to destination
+        }
+      }
+
+      // Rule 4: Genuine in-flight diversion trigger conditions
+      const isApproachingAlternate = (
+        (isEmergencySquawk && vrate <= -300 && closest.distNm <= 20) ||
+        (alt < 7000 && vrate <= -400 && closest.distNm <= 12) ||
+        (alt < 2500 && closest.distNm <= 7)
+      );
+
+      if (isApproachingAlternate) {
+        const status = (alt < 1500 && (ac.gs == null || ac.gs < 140) && closest.distNm <= 4) ? 'DIVERTED' : 'DIVERTING';
+        return {
+          status: status,
+          airport: closest
+        };
       }
 
       return null;
