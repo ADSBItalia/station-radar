@@ -20,6 +20,8 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 import cgi
 
 PORT = int(os.environ.get("PORT", 8088))
+ENV_AIRCRAFT_URL = os.environ.get("AIRCRAFT_URL")
+ENV_RECEIVER_URL = os.environ.get("RECEIVER_URL")
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 WEB_DIR = os.path.join(BASE_DIR, "web")
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
@@ -212,13 +214,14 @@ class StationRadarHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def proxy_aircraft_json(self):
-        # 1. First check local standard paths (zero network overhead on local install)
+        # 1. First check local standard paths (zero network overhead on local bare-metal install)
         local_candidates = [
             "/run/readsb/aircraft.json",
             "/run/dump1090-fa/aircraft.json",
             "/run/dump1090/aircraft.json",
             "/var/run/readsb/aircraft.json",
-            "/var/run/dump1090-fa/aircraft.json"
+            "/var/run/dump1090-fa/aircraft.json",
+            "/opt/adsb/ultrafeeder/readsb/aircraft.json"
         ]
         for path in local_candidates:
             if os.path.exists(path):
@@ -235,36 +238,64 @@ class StationRadarHandler(SimpleHTTPRequestHandler):
                 except Exception:
                     pass
 
-        # 2. Otherwise proxy from configured aircraft_url
+        # 2. Try configured URL or environment variable
         cfg = load_config()
-        url = cfg.get("source", {}).get("aircraft_url", "http://127.0.0.1/data/aircraft.json")
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": "ADSBItalia-Station-Radar/1.0"})
-            with urllib.request.urlopen(req, timeout=3) as resp:
-                data = resp.read()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            self.wfile.write(data)
-        except Exception as e:
-            self.send_response(502)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            self.wfile.write(json.dumps({
-                "now": 0,
-                "messages": 0,
-                "aircraft": [],
-                "error": f"Failed to connect to source: {url} ({str(e)})"
-            }).encode("utf-8"))
+        configured_url = ENV_AIRCRAFT_URL or cfg.get("source", {}).get("aircraft_url", "http://127.0.0.1/data/aircraft.json")
+
+        candidates_to_try = [configured_url]
+        fallback_probes = [
+            "http://127.0.0.1:8080/data/aircraft.json",
+            "http://127.0.0.1/data/aircraft.json",
+            "http://127.0.0.1:8080/tar1090/data/aircraft.json",
+            "http://127.0.0.1/tar1090/data/aircraft.json",
+            "http://ultrafeeder/data/aircraft.json",
+            "http://ultrafeeder:8080/data/aircraft.json",
+        ]
+        for p in fallback_probes:
+            if p not in candidates_to_try:
+                candidates_to_try.append(p)
+
+        last_error = ""
+        for url in candidates_to_try:
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "ADSBItalia-Station-Radar/1.0"})
+                with urllib.request.urlopen(req, timeout=2) as resp:
+                    data = resp.read()
+                if url != configured_url and not ENV_AIRCRAFT_URL:
+                    cfg.setdefault("source", {})["aircraft_url"] = url
+                    save_config(cfg)
+
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(data)
+                return
+            except Exception as e:
+                last_error = str(e)
+                if url == configured_url and ENV_AIRCRAFT_URL:
+                    break
+                if url == configured_url and configured_url not in ["http://127.0.0.1/data/aircraft.json", "http://localhost/data/aircraft.json"]:
+                    break
+
+        self.send_response(502)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(json.dumps({
+            "now": 0,
+            "messages": 0,
+            "aircraft": [],
+            "error": f"Failed to connect to ADS-B source ({last_error})"
+        }).encode("utf-8"))
 
     def proxy_receiver_json(self):
         local_candidates = [
             "/run/readsb/receiver.json",
             "/run/dump1090-fa/receiver.json",
-            "/var/run/readsb/receiver.json"
+            "/var/run/readsb/receiver.json",
+            "/opt/adsb/ultrafeeder/readsb/receiver.json"
         ]
         for path in local_candidates:
             if os.path.exists(path):
@@ -279,8 +310,40 @@ class StationRadarHandler(SimpleHTTPRequestHandler):
                     return
                 except Exception:
                     pass
-        
+
         cfg = load_config()
+        configured_url = ENV_RECEIVER_URL or cfg.get("source", {}).get("receiver_url", "http://127.0.0.1/data/receiver.json")
+
+        candidates_to_try = [configured_url]
+        fallback_probes = [
+            "http://127.0.0.1:8080/data/receiver.json",
+            "http://127.0.0.1/data/receiver.json",
+            "http://127.0.0.1:8080/tar1090/data/receiver.json",
+            "http://127.0.0.1/tar1090/data/receiver.json",
+            "http://ultrafeeder/data/receiver.json",
+            "http://ultrafeeder:8080/data/receiver.json",
+        ]
+        for p in fallback_probes:
+            if p not in candidates_to_try:
+                candidates_to_try.append(p)
+
+        for url in candidates_to_try:
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "ADSBItalia-Station-Radar/1.0"})
+                with urllib.request.urlopen(req, timeout=2) as resp:
+                    data = resp.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(data)
+                return
+            except Exception:
+                if url == configured_url and ENV_RECEIVER_URL:
+                    break
+                if url == configured_url and configured_url not in ["http://127.0.0.1/data/receiver.json", "http://localhost/data/receiver.json"]:
+                    break
+
         st = cfg.get("station", {})
         fallback = {
             "version": "ADSBItalia Station Radar 1.0",

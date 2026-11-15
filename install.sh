@@ -69,24 +69,60 @@ else
 fi
 echo -e "${GREEN}[✓] Dependencies verified (Python 3, curl, git).${NC}"
 
-# Detect Local ADS-B Feeder
+# Detect Local ADS-B Feeder / Ultrafeeder
 echo -e "\n${CYAN}[2/5] Detecting local ADS-B data feed...${NC}"
 LOCAL_DATA_SOURCE="http://127.0.0.1/data/aircraft.json"
+RECEIVER_SOURCE="http://127.0.0.1/data/receiver.json"
 
 if [ -f "/run/readsb/aircraft.json" ]; then
     echo -e "${GREEN}[✓] Detected local readsb (/run/readsb/aircraft.json)${NC}"
     LOCAL_DATA_SOURCE="/run/readsb/aircraft.json"
+    RECEIVER_SOURCE="/run/readsb/receiver.json"
 elif [ -f "/run/dump1090-fa/aircraft.json" ]; then
     echo -e "${GREEN}[✓] Detected local dump1090-fa (/run/dump1090-fa/aircraft.json)${NC}"
     LOCAL_DATA_SOURCE="/run/dump1090-fa/aircraft.json"
+    RECEIVER_SOURCE="/run/dump1090-fa/receiver.json"
 elif [ -f "/run/dump1090/aircraft.json" ]; then
     echo -e "${GREEN}[✓] Detected local dump1090 (/run/dump1090/aircraft.json)${NC}"
     LOCAL_DATA_SOURCE="/run/dump1090/aircraft.json"
-elif [ -d "/var/www/html/tar1090" ]; then
-    echo -e "${GREEN}[✓] Detected local tar1090 stack (local HTTP port)${NC}"
-    LOCAL_DATA_SOURCE="http://127.0.0.1/tar1090/data/aircraft.json"
+    RECEIVER_SOURCE="/run/dump1090/receiver.json"
+elif command -v docker &> /dev/null && docker ps 2>/dev/null | grep -qi "ultrafeeder"; then
+    echo -e "${GREEN}[✓] Detected running Ultrafeeder Docker container!${NC}"
+    UF_CID=$(docker ps -q --filter "name=ultrafeeder" | head -n1)
+    UF_PORT=$(docker port "$UF_CID" 80 2>/dev/null | awk -F: '{print $NF}' | head -n1 || echo "")
+    if [ -z "$UF_PORT" ]; then
+        UF_PORT=$(docker port "$UF_CID" 8080 2>/dev/null | awk -F: '{print $NF}' | head -n1 || echo "")
+    fi
+    [ -z "$UF_PORT" ] && UF_PORT="8080"
+    LOCAL_DATA_SOURCE="http://127.0.0.1:${UF_PORT}/data/aircraft.json"
+    RECEIVER_SOURCE="http://127.0.0.1:${UF_PORT}/data/receiver.json"
+    echo -e "${GREEN}[✓] Configured Ultrafeeder endpoint: ${LOCAL_DATA_SOURCE}${NC}"
 else
-    echo -e "${YELLOW}[i] No direct local readsb path found; using default HTTP source (configurable via web).${NC}"
+    # Probe active HTTP endpoints
+    FOUND_HTTP=false
+    for probe_url in \
+        "http://127.0.0.1:8080/data/aircraft.json" \
+        "http://127.0.0.1/data/aircraft.json" \
+        "http://127.0.0.1:8080/tar1090/data/aircraft.json" \
+        "http://127.0.0.1/tar1090/data/aircraft.json"; do
+        if curl -s -m 2 "$probe_url" 2>/dev/null | grep -q "aircraft"; then
+            LOCAL_DATA_SOURCE="$probe_url"
+            RECEIVER_SOURCE="${probe_url/aircraft.json/receiver.json}"
+            echo -e "${GREEN}[✓] Detected active HTTP ADS-B stream at ${probe_url}${NC}"
+            FOUND_HTTP=true
+            break
+        fi
+    done
+
+    if [ "$FOUND_HTTP" = false ]; then
+        if [ -d "/var/www/html/tar1090" ]; then
+            echo -e "${GREEN}[✓] Detected local tar1090 stack (local HTTP port)${NC}"
+            LOCAL_DATA_SOURCE="http://127.0.0.1/tar1090/data/aircraft.json"
+            RECEIVER_SOURCE="http://127.0.0.1/tar1090/data/receiver.json"
+        else
+            echo -e "${YELLOW}[i] No direct local readsb path found; using default HTTP source (configurable via web).${NC}"
+        fi
+    fi
 fi
 
 # Download / Clone Files
