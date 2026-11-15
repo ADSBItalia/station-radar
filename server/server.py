@@ -20,8 +20,24 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 import cgi
 
 PORT = int(os.environ.get("PORT", 8088))
+ENV_FEEDER_URL = os.environ.get("FEEDER_URL")
 ENV_AIRCRAFT_URL = os.environ.get("AIRCRAFT_URL")
 ENV_RECEIVER_URL = os.environ.get("RECEIVER_URL")
+
+# Combine and auto-derive endpoints if FEEDER_URL or AIRCRAFT_URL is specified
+if ENV_FEEDER_URL:
+    clean_base = ENV_FEEDER_URL.rstrip("/")
+    if not clean_base.endswith("/data"):
+        data_base = f"{clean_base}/data"
+    else:
+        data_base = clean_base
+    if not ENV_AIRCRAFT_URL:
+        ENV_AIRCRAFT_URL = f"{data_base}/aircraft.json"
+    if not ENV_RECEIVER_URL:
+        ENV_RECEIVER_URL = f"{data_base}/receiver.json"
+elif ENV_AIRCRAFT_URL and not ENV_RECEIVER_URL:
+    if "aircraft.json" in ENV_AIRCRAFT_URL:
+        ENV_RECEIVER_URL = ENV_AIRCRAFT_URL.replace("aircraft.json", "receiver.json")
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 WEB_DIR = os.path.join(BASE_DIR, "web")
 CONFIG_PATH = os.path.join(BASE_DIR, "config.json")

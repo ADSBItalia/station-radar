@@ -81,7 +81,7 @@ services:
 ```
 
 #### Case B: readsb inside a Container (Ultrafeeder / Docker Stack):
-If readsb runs inside another container (e.g. Ultrafeeder), **no host volumes are needed**! Simply connect directly over the Docker network via HTTP:
+If readsb runs inside another container (e.g. Ultrafeeder), **no host volumes are needed**! Simply specify a single parameter `FEEDER_URL`:
 
 ```yaml
 version: '3.8'
@@ -96,11 +96,10 @@ services:
     environment:
       - PORT=8088
       - PYTHONUNBUFFERED=1
-      # Connect directly to your feeder container:
-      - AIRCRAFT_URL=http://ultrafeeder/data/aircraft.json
-      - RECEIVER_URL=http://ultrafeeder/data/receiver.json
+      # Single parameter: automatically deduces aircraft.json and receiver.json!
+      - FEEDER_URL=http://ultrafeeder
 ```
-*(Tip: Replace `http://ultrafeeder` with your container name or `http://host.docker.internal:8080/data/aircraft.json` if on host-mapped ports).*
+*(Tip: You can also specify full URLs with `AIRCRAFT_URL=http://ultrafeeder/data/aircraft.json` or `http://host.docker.internal:8080/data/aircraft.json`).*
 
 Start the container:
 ```bash
