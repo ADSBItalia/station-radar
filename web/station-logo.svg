@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#081420"/>
+      <stop offset="100%" stop-color="#0f283d"/>
+    </linearGradient>
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="64" height="64" rx="14" fill="url(#bgGrad)" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.4"/>
+  <!-- Concentric Radar Range Rings -->
+  <circle cx="32" cy="32" r="26" fill="none" stroke="#38bdf8" stroke-width="1" stroke-opacity="0.15" stroke-dasharray="3 3"/>
+  <circle cx="32" cy="32" r="18" fill="none" stroke="#38bdf8" stroke-width="1.2" stroke-opacity="0.3"/>
+  <circle cx="32" cy="32" r="10" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.5"/>
+  <!-- Radar Sweep Cone -->
+  <path d="M32 32 L56 22 A26 26 0 0 0 46 8 Z" fill="url(#glowGrad)"/>
+  <line x1="32" y1="32" x2="56" y2="22" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round"/>
+  <!-- Central Beacon / Antenna Target -->
+  <circle cx="32" cy="32" r="3.5" fill="#38bdf8"/>
+  <circle cx="32" cy="32" r="1.5" fill="#ffffff"/>
+  <!-- Target Blip -->
+  <circle cx="44" cy="18" r="2" fill="#22c55e"/>
+</svg>

@@ -1,0 +1,11 @@
+.git
+.github
+*.md
+*.bak
+*.pyc
+__pycache__
+resolver/target
+web/images/airline-banners/*
+web/images/airline-banners/.*
+!web/images/airline-banners/index.json
+!web/images/airline-banners/operator-banner-index.json

@@ -157,7 +157,7 @@ if [ ! -f "$INSTALL_DIR/config.json" ]; then
   "station": {
     "name": "ADS-B Station",
     "subtitle": "Local 1090 MHz Receiver",
-    "logo_url": "fiscaglia-favicon.svg",
+    "logo_url": "station-logo.svg",
     "website_url": "https://adsbitalia.it",
     "lat": 44.769651,
     "lon": 11.930735,

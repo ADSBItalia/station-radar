@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Station Settings · ADSBItalia Radar</title>
-  <link rel="icon" type="image/svg+xml" href="fiscaglia-favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="station-logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -421,7 +421,7 @@
 
   <header>
     <div class="brand-group">
-      <img id="headerLogo" src="fiscaglia-favicon.svg" alt="Station Logo" class="brand-logo">
+      <img id="headerLogo" src="station-logo.svg" alt="Station Logo" class="brand-logo">
       <div class="brand-text">
         <h1 id="headerStationTitle">Station Settings · Control Panel</h1>
         <p>ADSBItalia Station Edition · Autonomous Radar</p>
@@ -691,7 +691,7 @@
         graphsLink.href = `${window.location.protocol}//${window.location.hostname}:8085`;
       }
       try {
-        const res = await fetch('/api/config');
+        const res = await fetch('api/config');
         if (res.ok) {
           currentConfig = await res.json();
           populateFields(currentConfig);
@@ -845,9 +845,9 @@
 
       showToast('Uploading logo...', 'success');
       try {
-        const res = await fetch('/api/upload-logo', { method: 'POST', body: formData });
+        const res = await fetch('api/upload-logo', { method: 'POST', body: formData });
         const data = await res.json();
-        if (data.ok) {
+        if (data.ok || data.status === 'ok') {
           document.getElementById('stationLogo').value = data.logo_url;
           document.getElementById('headerLogo').src = data.logo_url;
           showToast('Logo uploaded successfully!', 'success');
@@ -895,13 +895,13 @@
       };
 
       try {
-        const res = await fetch('/api/config', {
+        const res = await fetch('api/config', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         const result = await res.json();
-        if (result.ok) {
+        if (result.ok || result.status === 'ok') {
           showToast('✅ All settings saved successfully!', 'success');
         } else {
           showToast('❌ Error saving settings: ' + result.error, 'error');

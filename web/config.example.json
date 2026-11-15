@@ -1,12 +1,12 @@
 {
   "station": {
-    "name": "Stazione ADS-B",
-    "subtitle": "Ricevitore Locale 1090 MHz",
-    "logo_url": "fiscaglia-favicon.svg",
+    "name": "ADS-B Station",
+    "subtitle": "Live ADS-B Receiver",
+    "logo_url": "station-logo.svg",
     "website_url": "https://adsbitalia.it",
-    "lat": 44.769651,
-    "lon": 11.930735,
-    "alt_m": 15,
+    "lat": null,
+    "lon": null,
+    "alt_m": 0,
     "range_rings": [25, 50, 100, 150, 200, 250],
     "ring_color": "#38bdf8",
     "ring_opacity": 0.45
