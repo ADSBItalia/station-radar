@@ -57,23 +57,15 @@ The installer will automatically:
 
 Ideal for users running Docker, Portainer, CasaOS, Unraid, or containerized feeder stacks (`adsb.im` / `ultrafeeder`).
 
-#### Quick Setup (Build & Run from Source):
-```bash
-git clone https://github.com/ADSBItalia/station-radar.git
-cd station-radar
-docker compose up -d --build
-```
-
-#### Or with Docker Compose (standalone / existing stack):
-You can build directly from GitHub without cloning the entire repository:
+#### Case A: Bare-Metal readsb / dump1090 on the Host:
+If readsb or dump1090 runs natively on the host:
 
 ```yaml
 version: '3.8'
 
 services:
   station-radar:
-    build: https://github.com/ADSBItalia/station-radar.git#main
-    image: adsbitalia-station-radar:local
+    image: ghcr.io/adsbitalia/station-radar:latest
     container_name: station-radar
     restart: unless-stopped
     ports:
@@ -87,6 +79,28 @@ services:
       - PORT=8088
       - PYTHONUNBUFFERED=1
 ```
+
+#### Case B: readsb inside a Container (Ultrafeeder / Docker Stack):
+If readsb runs inside another container (e.g. Ultrafeeder), **no host volumes are needed**! Simply connect directly over the Docker network via HTTP:
+
+```yaml
+version: '3.8'
+
+services:
+  station-radar:
+    image: ghcr.io/adsbitalia/station-radar:latest
+    container_name: station-radar
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    environment:
+      - PORT=8088
+      - PYTHONUNBUFFERED=1
+      # Connect directly to your feeder container:
+      - AIRCRAFT_URL=http://ultrafeeder/data/aircraft.json
+      - RECEIVER_URL=http://ultrafeeder/data/receiver.json
+```
+*(Tip: Replace `http://ultrafeeder` with your container name or `http://host.docker.internal:8080/data/aircraft.json` if on host-mapped ports).*
 
 Start the container:
 ```bash
