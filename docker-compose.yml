@@ -4,9 +4,6 @@ services:
   # ADSBItalia Station Radar (Modern Avionics Web Radar & Settings Panel)
   station-radar:
     image: ghcr.io/adsbitalia/station-radar:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
     container_name: adsbitalia-station-radar
     restart: unless-stopped
     ports:
@@ -15,30 +12,12 @@ services:
       # Persistent configuration and custom uploaded logos
       - ./config.json:/app/config.json
       - ./custom_images:/app/web/images/custom
-      # Option A: Mount local readsb / dump1090 data feed (bare-metal host)
-      - /run/readsb:/run/readsb:ro
+      # Option A (Bare-metal): Mount local readsb / dump1090 data feed
+      # - /run/readsb:/run/readsb:ro
     environment:
       - PORT=8088
       - PYTHONUNBUFFERED=1
-      # Option B: If readsb runs in Ultrafeeder / Docker container, uncomment below:
+      # Option B (Ultrafeeder / Docker): Simply uncomment TAR1090_URL below:
       # - TAR1090_URL=http://ultrafeeder/
-
-  # ADSBItalia Station Graphs (RF Signal Telemetry & Performance Dashboard)
-  station-graphs:
-    image: ghcr.io/adsbitalia/station-graphs:latest
-    container_name: adsbitalia-station-graphs
-    restart: unless-stopped
-    ports:
-      - "8085:8085"
-    volumes:
-      # Option A: Bare-metal readsb & collectd
-      - /run/readsb:/run/readsb:ro
-      - /run/collectd:/run/collectd:ro
-      # Option B: Ultrafeeder host mount (uncomment if using Ultrafeeder)
-      # - /opt/adsb/ultrafeeder/graphs1090:/opt/adsb/ultrafeeder/graphs1090:ro
-    environment:
-      - PORT=8085
-      - STATION_NAME=ADS-B Station
-      # Option B: If readsb runs in Ultrafeeder / Docker container, uncomment below:
-      # - TAR1090_URL=http://ultrafeeder/
-      # - COLLECTD_RRD_DIR=/opt/adsb/ultrafeeder/graphs1090
+      # Security (Optional): Password-protect settings from unauthorized public edits
+      # - ADMIN_PASSWORD=your_secret_password
