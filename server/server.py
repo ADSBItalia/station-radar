@@ -201,6 +201,64 @@ class StationRadarHandler(SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps([route_data] if route_data else []).encode("utf-8"))
             return
 
+        # Route: Proxy / Local Flags (serves local bundled SVG, or fetches from adsbitalia CDN)
+        if clean_path.startswith("/flags/"):
+            clean_rel = clean_path.lstrip("/")
+            local_flag = os.path.join(WEB_DIR, clean_rel)
+            if os.path.exists(local_flag):
+                return super().do_GET()
+            try:
+                remote_url = f"https://adsbitalia.it{self.path}"
+                req = urllib.request.Request(remote_url, headers={"User-Agent": "ADSBItalia-Station-Radar/1.0"})
+                with urllib.request.urlopen(req, timeout=3) as resp:
+                    data = resp.read()
+                try:
+                    os.makedirs(os.path.dirname(local_flag), exist_ok=True)
+                    with open(local_flag, "wb") as f:
+                        f.write(data)
+                except Exception:
+                    pass
+                self.send_response(200)
+                self.send_header("Content-Type", "image/svg+xml")
+                self.send_header("Cache-Control", "public, max-age=86400")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(data)
+                return
+            except Exception:
+                self.send_response(404)
+                self.end_headers()
+                return
+
+        # Route: Proxy / Local Aircraft Silhouettes
+        if clean_path.startswith("/aircraft_sil/"):
+            clean_rel = clean_path.lstrip("/")
+            local_sil = os.path.join(WEB_DIR, clean_rel)
+            if os.path.exists(local_sil):
+                return super().do_GET()
+            try:
+                remote_url = f"https://adsbitalia.it{self.path}"
+                req = urllib.request.Request(remote_url, headers={"User-Agent": "ADSBItalia-Station-Radar/1.0"})
+                with urllib.request.urlopen(req, timeout=3) as resp:
+                    data = resp.read()
+                try:
+                    os.makedirs(os.path.dirname(local_sil), exist_ok=True)
+                    with open(local_sil, "wb") as f:
+                        f.write(data)
+                except Exception:
+                    pass
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Cache-Control", "public, max-age=86400")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(data)
+                return
+            except Exception:
+                self.send_response(404)
+                self.end_headers()
+                return
+
         # Route: Settings redirect
         if clean_path == "/settings":
             self.send_response(302)
@@ -215,6 +273,35 @@ class StationRadarHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         clean_path = self.path.split("?")[0].rstrip("/")
+
+        # Route: Proxy Live Routes API
+        if clean_path.startswith("/api/0/routeset"):
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                req_body = self.rfile.read(length)
+                remote_url = "https://adsbitalia.it/api/0/routeset"
+                req = urllib.request.Request(
+                    remote_url,
+                    data=req_body,
+                    headers={
+                        "Content-Type": "application/json",
+                        "User-Agent": "ADSBItalia-Station-Radar/1.0"
+                    }
+                )
+                with urllib.request.urlopen(req, timeout=4) as resp:
+                    resp_data = resp.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(resp_data)
+                return
+            except Exception as e:
+                self.send_response(502)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(b"[]")
+                return
 
         # Route: Save Configuration
         if clean_path == "/api/config":

@@ -7,9 +7,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>ADS-B Station · Live Radar</title>
   
-  <link rel="icon" type="image/svg+xml" href="station-logo.svg">
-  <link rel="shortcut icon" href="station-logo.svg">
-  <link rel="shortcut icon" type="image/x-icon" href="station-logo.svg">
+  <link rel="icon" type="image/svg+xml" href="fiscaglia-favicon.svg">
+  <link rel="shortcut icon" href="fiscaglia-favicon.svg">
+  <link rel="shortcut icon" type="image/x-icon" href="fiscaglia-favicon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -2621,7 +2621,7 @@
   <header class="top-bar glass notranslate" translate="no">
     <!-- Brand -->
     <a href="https://www.djrexishere.it" target="_blank" class="brand" title="ADS-B Station (djrexishere.it)">
-      <img src="station-logo.svg" class="brand-logo-img" alt="ADS-B Station" style="height:36px; width:36px; border-radius:50%; object-fit:cover; border:1px solid rgba(56, 189, 248, 0.45);">
+      <img src="fiscaglia-favicon.svg" class="brand-logo-img" alt="ADS-B Station" style="height:36px; width:36px; border-radius:50%; object-fit:cover; border:1px solid rgba(56, 189, 248, 0.45);">
       <span class="brand-title" style="display:flex; flex-direction:column; line-height:1.15; margin-left:6px;">
         <span id="brandStationSubtitle" style="font-weight:700; color:#f0f6fc; font-size:13px; letter-spacing:0.02em;">Stazione ADS-B</span>
         <span style="color:#38bdf8; font-weight:700; font-size:11px; letter-spacing:0.05em;">RADAR LIVE</span>
@@ -2716,7 +2716,7 @@
       <button class="btn-action active" id="btnToggleAntennaOutline" title="Mostra/Nascondi Sagoma Portata Ricezione Antenna (24h)">
         <span>📡</span><span class="btn-label" id="btnToggleAntennaOutlineLbl">Copertura</span>
       </button>
-      <a href="graphs/" class="btn-action primary" id="btnGraphs" title="Telemetria & Grafici Prestazioni" style="background: rgba(56, 189, 248, 0.18); border-color: rgba(56, 189, 248, 0.45); color: #38bdf8; text-decoration: none;">
+      <a href="/graphs/" class="btn-action primary" id="btnGraphs" title="Telemetria & Grafici Prestazioni" style="background: rgba(56, 189, 248, 0.18); border-color: rgba(56, 189, 248, 0.45); color: #38bdf8; text-decoration: none;">
         <span>📊</span><span class="btn-label" id="btnGraphsLbl">Grafici</span>
       </a>
     </div>
@@ -2727,17 +2727,17 @@
     <!-- Station Branding Banner -->
     <div class="sidebar-header-branding" style="padding: 12px 14px; background: linear-gradient(135deg, rgba(7, 23, 36, 0.95), rgba(11, 34, 52, 0.98)); border-bottom: 1px solid rgba(56, 189, 248, 0.16); display:flex; align-items:center; justify-content:space-between; gap:10px;">
       <div style="display:flex; align-items:center; gap:10px;">
-        <img src="station-logo.svg" alt="ADS-B Station" style="height:42px; width:42px; border-radius:50%; border:1px solid rgba(56, 189, 248, 0.35);">
+        <img src="fiscaglia-favicon.svg" alt="ADS-B Station" style="height:42px; width:42px; border-radius:50%; border:1px solid rgba(56, 189, 248, 0.35);">
         <div>
           <div id="sideStationTitle" style="font-size:13px; font-weight:700; color:#f0f6fc;">ADS-B Station</div>
           <div style="font-size:11px; color:#9eb7c5; font-family:'JetBrains Mono',monospace;">FE · 44.7697°N, 11.9307°E</div>
         </div>
       </div>
       <div style="display:flex; gap:6px; align-items:center;">
-        <a href="adsbhistory/" class="btn-action" title="Storico ADS-B" style="padding:6px 10px; font-size:11px; font-weight:700; color:#38bdf8; background:rgba(56, 189, 248,0.15); border:1px solid rgba(56, 189, 248,0.35); border-radius:6px; text-decoration:none; white-space:nowrap;">
+        <a href="/adsbhistory/" class="btn-action" title="Storico ADS-B" style="padding:6px 10px; font-size:11px; font-weight:700; color:#38bdf8; background:rgba(56, 189, 248,0.15); border:1px solid rgba(56, 189, 248,0.35); border-radius:6px; text-decoration:none; white-space:nowrap;">
           📜 <span>Storico</span>
         </a>
-        <a href="graphs/" class="btn-action" id="sideGraphsBtn" title="Telemetry & Graphs" style="padding:6px 10px; font-size:11px; font-weight:700; color:#38bdf8; background:rgba(56, 189, 248,0.15); border:1px solid rgba(56, 189, 248,0.35); border-radius:6px; text-decoration:none; white-space:nowrap;">
+        <a href="/graphs/" class="btn-action" id="sideGraphsBtn" title="Telemetry & Graphs" style="padding:6px 10px; font-size:11px; font-weight:700; color:#38bdf8; background:rgba(56, 189, 248,0.15); border:1px solid rgba(56, 189, 248,0.35); border-radius:6px; text-decoration:none; white-space:nowrap;">
           📊 <span id="sideGraphsText">Grafici</span>
         </a>
       </div>
@@ -3142,7 +3142,7 @@
         <span>🗺️</span>
         <span id="filterAirportBtnText">Filter map for this airport</span>
       </button>
-      <div class="airport-live-badge">📡 <span id="airportStationBadge">ADS-B Station</span> · Live Reception</div>
+      <div class="airport-live-badge">📡 Fiscaglia ADS-B Station · Live Reception</div>
     </div>
   </aside>
 
@@ -3207,7 +3207,7 @@
 
     // Application Configuration
     
-    // Dynamic Station Configuration from /api/config
+    // Dynamic Station Configuration from api/config
     let dynamicStationConfig = null;
     async function fetchDynamicConfig() {
       try {
@@ -3276,14 +3276,14 @@
     const CONFIG = {
       dataUrl: urlParams.get('data') || 'api/aircraft.json',
       receiverUrl: urlParams.get('receiver') || 'api/receiver.json',
-      outlineUrl: urlParams.get('outline') || 'api/outline.json',
+      outlineUrl: urlParams.get('outline') || 'data/outline.json',
       pollIntervalMs: 1000,
-      initialCenter: [0, 0],
+      initialCenter: [11.930735, 44.769651], // Stazione Fiscaglia (FE)
       initialZoom: 7.0,
       siteLat: 44.769651,
       siteLon: 11.930735,
       hasAntenna: true,
-      routeApiUrl: 'api/routes'
+      routeApiUrl: '/api/0/routeset'
     };
 
     function calculateDistanceNm(lat1, lon1, lat2, lon2) {
@@ -3633,7 +3633,7 @@
         toastSwitched: "Lingua impostata: Italiano 🇮🇹"
       },
       en: {
-        pageTitle: "ADS-B Station · Live Radar",
+        pageTitle: "Fiscaglia ADS-B Station · Live Radar",
         brandSubtitle: "ADS-B Station",
         statTot: "Tot:",
         statTotTitle: "Total aircraft received by antenna",
@@ -3670,7 +3670,7 @@
         btnCoverageTitle: "Toggle Antenna Reception Range Contour (Outline)",
         btnGraphs: "Graphs",
         btnGraphsTitle: "Performance Telemetry & Charts",
-        sideStation: "ADS-B Station",
+        sideStation: "Fiscaglia ADS-B Station",
         panelAircraft: "Aircraft in View",
         sigAll: "ALL",
         sigAdsb: "ADS-B",
@@ -4849,7 +4849,7 @@
         features: [{
           type: 'Feature',
           geometry: { type: 'Point', coordinates: [lon, lat] },
-          properties: { name: 'ADS-B Station' }
+          properties: { name: 'Fiscaglia ADS-B Station' }
         }]
       };
 
@@ -7356,7 +7356,11 @@
       const flagImg = document.getElementById('cardFlag');
       if (info.iso) {
         if (flagImg.getAttribute('data-iso') !== info.iso) {
-          flagImg.onerror = function() { this.onerror = function() { this.style.display = 'none'; }; this.src = 'https://flagcdn.com/24x18/' + (info.iso || '').toLowerCase() + '.png'; }; flagImg.src = `flags/3x2/${info.iso}.svg`;
+          flagImg.onerror = function() {
+            this.onerror = function() { this.style.display = 'none'; };
+            this.src = 'https://flagcdn.com/24x18/' + (info.iso || '').toLowerCase() + '.png';
+          };
+          flagImg.src = `/flags/3x2/${info.iso}.svg`;
           flagImg.setAttribute('data-iso', info.iso);
         }
         flagImg.style.display = 'inline-block';
@@ -7789,7 +7793,7 @@
           if (selectedHex !== (hex || '').toLowerCase()) return;
           fallback.innerHTML = `
             <div style="position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background: radial-gradient(circle at center, rgba(56, 189, 248,0.08) 0%, rgba(10,15,26,0.92) 80%);">
-              <img src="station-logo.svg" alt="" style="position:absolute; opacity:0.06; max-height:42px; pointer-events:none;">
+              <img src="fiscaglia-favicon.svg" alt="" style="position:absolute; opacity:0.06; max-height:42px; pointer-events:none;">
               <img src="${silUrl}" alt="${type}" style="max-height:75px; max-width:85%; object-fit:contain; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.6));">
             </div>
           `;
@@ -7807,7 +7811,7 @@
       const fallback = document.getElementById('cardPhotoFallback');
       fallback.innerHTML = `
         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:12px; text-align:center;">
-          <img src="station-logo.svg" alt="ADSBItalia" style="max-height:36px; opacity:0.35; margin-bottom:4px;">
+          <img src="fiscaglia-favicon.svg" alt="ADSBItalia" style="max-height:36px; opacity:0.35; margin-bottom:4px;">
           <span style="font-size:0.75rem; font-weight:600; color:var(--text-muted);">No photo available</span>
         </div>
       `;
@@ -7963,7 +7967,7 @@
         const squawk = ac.squawk || '----';
         const type = ac.t || '---';
         const info = getCountryInfo(hex);
-        const flag = info.iso ? `<img class="flag-icon" src="flags/3x2/${info.iso}.svg" data-iso="${info.iso}" onerror="this.onerror=function(){this.style.display='none';}; this.src='https://flagcdn.com/24x18/' + this.dataset.iso.toLowerCase() + '.png';" alt="${info.iso}">` : '';
+        const flag = info.iso ? `<img class="flag-icon" src="/flags/3x2/${info.iso}.svg" data-iso="${info.iso}" onerror="this.onerror=function(){this.style.display='none';}; this.src='https://flagcdn.com/24x18/' + this.dataset.iso.toLowerCase() + '.png';" alt="${info.iso}">` : '';
 
         const sig = ac._signal || getSignalInfo(ac);
         const signalHtml = `<span class="signal-pill" style="color: ${sig.color}; background: ${sig.bg}; border: 1px solid ${sig.color}40;">${sig.label}</span>`;
@@ -8182,7 +8186,7 @@
     // History Replay System
     async function initReplaySystem() {
       try {
-        const res = await fetch('chunks/chunks.json');
+        const res = await fetch('/chunks/chunks.json');
         if (res.ok) {
           const data = await res.json();
           replayChunks = (data.chunks || []).filter(c => c.startsWith('chunk_'));
@@ -9989,7 +9993,7 @@
           <div class="ap-flight-card" data-hex="${ac.hex}" data-idx="${index}">
             <div class="ap-flight-left">
               <div class="ap-flight-callsign">
-                ${flagIso ? `<img src="flags/3x2/${flagIso}.svg" data-iso="${flagIso}" onerror="this.onerror=function(){this.style.display='none';}; this.src='https://flagcdn.com/24x18/' + this.dataset.iso.toLowerCase() + '.png';" style="height: 12px; border-radius: 2px;">` : ''}
+                ${flagIso ? `<img src="/flags/3x2/${flagIso}.svg" data-iso="${flagIso}" onerror="this.onerror=function(){this.style.display='none';}; this.src='https://flagcdn.com/24x18/' + this.dataset.iso.toLowerCase() + '.png';" style="height: 12px; border-radius: 2px;">` : ''}
                 <span>${callsign || reg || (item.isScheduled ? 'PLANNED FLIGHT' : ac.hex.toUpperCase())}</span>
                 <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: normal; background: rgba(255,255,255,0.06); padding: 1px 4px; border-radius: 3px;">${reg || ac.t || (item.isScheduled ? 'PLAN' : '')}</span>
                 ${liveBadgeHtml}
