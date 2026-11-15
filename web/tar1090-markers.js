@@ -1,6 +1,21 @@
 // -*- mode: javascript; indent-tabs-mode: nil; c-basic-offset: 8 -*-
 "use strict";
 
+// Safe URLSearchParams fallback for usp references
+let usp = (typeof window !== 'undefined' && window.usp) ? window.usp : null;
+if (!usp) {
+    try {
+        const _sp = new URLSearchParams(window.location.search);
+        usp = {
+            has: (k) => _sp.has(k),
+            get: (k) => _sp.get(k),
+            getInt: (k) => parseInt(_sp.get(k), 10) || 0
+        };
+    } catch(e) {
+        usp = { has: () => false, get: () => null, getInt: () => 0 };
+    }
+}
+
 let shapes = {
     // A320 + B737 family icons: thank you pimlie for providing refined svgs
     'a319': {

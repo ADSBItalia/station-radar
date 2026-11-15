@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Station Settings · ADSBItalia Radar</title>
-  <link rel="icon" type="image/svg+xml" href="fiscaglia-favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="station-logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -421,7 +421,7 @@
 
   <header>
     <div class="brand-group">
-      <img id="headerLogo" src="fiscaglia-favicon.svg" alt="Station Logo" class="brand-logo">
+      <img id="headerLogo" src="station-logo.svg" alt="Station Logo" class="brand-logo">
       <div class="brand-text">
         <h1 id="headerStationTitle">Station Settings · Control Panel</h1>
         <p>ADSBItalia Station Edition · Autonomous Radar</p>
@@ -461,6 +461,12 @@
           <input type="text" id="stationWebsite" placeholder="https://adsbitalia.it">
           <span class="hint">Opened when clicking the station logo</span>
         </div>
+
+      <div class="form-group">
+        <label for="graphsUrl">Telemetry & Graphs URL</label>
+        <input type="text" id="graphsUrl" placeholder="/graphs/ or http://192.168.1.50:8085">
+        <span class="help-text">URL or path to graphs1090 telemetry dashboard (defaults to /graphs/)</span>
+      </div>
 
         <div class="form-group">
           <label for="stationLogo">Station Logo / Crest (URL or File)</label>
@@ -691,7 +697,7 @@
         graphsLink.href = `${window.location.protocol}//${window.location.hostname}:8085`;
       }
       try {
-        const res = await fetch('/api/config');
+        const res = await fetch('api/config');
         if (res.ok) {
           currentConfig = await res.json();
           populateFields(currentConfig);
@@ -703,6 +709,60 @@
 
     function populateFields(cfg) {
       const st = cfg.station || {};
+      const graphsLink = document.getElementById('linkStationGraphs');
+      if (graphsLink) {
+        const targetGraphs = st.graphs_url || (window.location.origin + '/graphs/');
+        graphsLink.href = targetGraphs;
+      }
+      const graphsInput = document.getElementById('graphsUrl');
+      if (graphsInput) {
+        graphsInput.value = st.graphs_url || '';
+      }
+
+      // Security status
+      const lockBadge = document.getElementById('lockBadge');
+      if (lockBadge) {
+        if (cfg.is_protected) {
+          lockBadge.textContent = '🔒 PROTECTED';
+          lockBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+          lockBadge.style.color = '#34d399';
+        } else {
+          lockBadge.textContent = '🔓 UNLOCKED';
+          lockBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+          lockBadge.style.color = '#fbbf24';
+        }
+      }
+      const savedPwd = sessionStorage.getItem('adsb_station_admin_pwd');
+      if (savedPwd && document.getElementById('adminPassword')) {
+        document.getElementById('adminPassword').value = savedPwd;
+      }
+      const graphsLink = document.getElementById('linkStationGraphs');
+      if (graphsLink) {
+        const targetGraphs = st.graphs_url || (window.location.origin + '/graphs/');
+        graphsLink.href = targetGraphs;
+      }
+      const graphsInput = document.getElementById('graphsUrl');
+      if (graphsInput) {
+        graphsInput.value = st.graphs_url || '';
+      }
+
+      // Security status
+      const lockBadge = document.getElementById('lockBadge');
+      if (lockBadge) {
+        if (cfg.is_protected) {
+          lockBadge.textContent = '🔒 PROTECTED';
+          lockBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+          lockBadge.style.color = '#34d399';
+        } else {
+          lockBadge.textContent = '🔓 UNLOCKED';
+          lockBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+          lockBadge.style.color = '#fbbf24';
+        }
+      }
+      const savedPwd = sessionStorage.getItem('adsb_station_admin_pwd');
+      if (savedPwd && document.getElementById('adminPassword')) {
+        document.getElementById('adminPassword').value = savedPwd;
+      }
       const src = cfg.source || {};
       const th = cfg.theme || {};
       const feat = cfg.features || {};
@@ -845,7 +905,7 @@
 
       showToast('Uploading logo...', 'success');
       try {
-        const res = await fetch('/api/upload-logo', { method: 'POST', body: formData });
+        const res = await fetch('api/upload-logo', { method: 'POST', body: formData });
         const data = await res.json();
         if (data.ok) {
           document.getElementById('stationLogo').value = data.logo_url;
@@ -895,7 +955,7 @@
       };
 
       try {
-        const res = await fetch('/api/config', {
+        const res = await fetch('api/config', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)

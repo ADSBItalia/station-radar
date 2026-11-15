@@ -7,9 +7,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>ADS-B Station · Live Radar</title>
   
-  <link rel="icon" type="image/svg+xml" href="fiscaglia-favicon.svg">
-  <link rel="shortcut icon" href="fiscaglia-favicon.svg">
-  <link rel="shortcut icon" type="image/x-icon" href="fiscaglia-favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="station-logo.svg">
+  <link rel="shortcut icon" href="station-logo.svg">
+  <link rel="shortcut icon" type="image/x-icon" href="station-logo.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -2620,10 +2620,10 @@
   <!-- Top Navigation Bar -->
   <header class="top-bar glass notranslate" translate="no">
     <!-- Brand -->
-    <a href="https://www.djrexishere.it" target="_blank" class="brand" title="ADS-B Station (djrexishere.it)">
-      <img src="fiscaglia-favicon.svg" class="brand-logo-img" alt="ADS-B Station" style="height:36px; width:36px; border-radius:50%; object-fit:cover; border:1px solid rgba(56, 189, 248, 0.45);">
+    <a href="javascript:void(0)" id="brandStationLink" class="brand" title="ADS-B Station">
+      <img src="station-logo.svg" class="brand-logo-img" alt="ADS-B Station" style="height:36px; width:36px; border-radius:50%; object-fit:cover; border:1px solid rgba(56, 189, 248, 0.45);">
       <span class="brand-title" style="display:flex; flex-direction:column; line-height:1.15; margin-left:6px;">
-        <span id="brandStationSubtitle" style="font-weight:700; color:#f0f6fc; font-size:13px; letter-spacing:0.02em;">Stazione ADS-B</span>
+        <span id="brandStationSubtitle" style="font-weight:700; color:#f0f6fc; font-size:13px; letter-spacing:0.02em;">ADS-B Station</span>
         <span style="color:#38bdf8; font-weight:700; font-size:11px; letter-spacing:0.05em;">RADAR LIVE</span>
       </span>
     </a>
@@ -2727,7 +2727,7 @@
     <!-- Station Branding Banner -->
     <div class="sidebar-header-branding" style="padding: 12px 14px; background: linear-gradient(135deg, rgba(7, 23, 36, 0.95), rgba(11, 34, 52, 0.98)); border-bottom: 1px solid rgba(56, 189, 248, 0.16); display:flex; align-items:center; justify-content:space-between; gap:10px;">
       <div style="display:flex; align-items:center; gap:10px;">
-        <img src="fiscaglia-favicon.svg" alt="ADS-B Station" style="height:42px; width:42px; border-radius:50%; border:1px solid rgba(56, 189, 248, 0.35);">
+        <img src="station-logo.svg" alt="ADS-B Station" style="height:42px; width:42px; border-radius:50%; border:1px solid rgba(56, 189, 248, 0.35);">
         <div>
           <div id="sideStationTitle" style="font-size:13px; font-weight:700; color:#f0f6fc;">ADS-B Station</div>
           <div style="font-size:11px; color:#9eb7c5; font-family:'JetBrains Mono',monospace;">FE · 44.7697°N, 11.9307°E</div>
@@ -3142,7 +3142,7 @@
         <span>🗺️</span>
         <span id="filterAirportBtnText">Filter map for this airport</span>
       </button>
-      <div class="airport-live-badge">📡 Fiscaglia ADS-B Station · Live Reception</div>
+      <div class="airport-live-badge">📡 <span id="badgeStationName">ADS-B Station</span> · Live Reception</div>
     </div>
   </aside>
 
@@ -3241,10 +3241,26 @@
         const fav = document.getElementById('dynamicFavicon');
         if (fav) fav.href = st.logo_url;
       }
-      if (st.website_url) {
-        const brandLink = document.querySelector('a.brand');
-        if (brandLink) brandLink.href = st.website_url;
+      const brandLink = document.getElementById('brandStationLink') || document.querySelector('a.brand');
+      if (brandLink) {
+        if (st.website_url && st.website_url.trim() && st.website_url !== '#') {
+          brandLink.href = st.website_url.trim();
+          brandLink.target = '_blank';
+          brandLink.title = st.name || 'ADS-B Station';
+        } else {
+          brandLink.href = 'javascript:void(0)';
+          brandLink.removeAttribute('target');
+          brandLink.title = st.name || 'ADS-B Station';
+        }
       }
+      const badgeStation = document.getElementById('badgeStationName');
+      if (badgeStation && st.name) badgeStation.textContent = st.name;
+      
+      const graphsBtn = document.getElementById('btnGraphs');
+      const sideGraphsBtn = document.getElementById('sideGraphsBtn');
+      const targetGraphs = st.graphs_url || (window.location.origin + '/graphs/');
+      if (graphsBtn) graphsBtn.href = targetGraphs;
+      if (sideGraphsBtn) sideGraphsBtn.href = targetGraphs;
 
       // 2. Coordinates & Range Rings
       if (st.lat != null && st.lon != null) {
@@ -3276,14 +3292,14 @@
     const CONFIG = {
       dataUrl: urlParams.get('data') || 'api/aircraft.json',
       receiverUrl: urlParams.get('receiver') || 'api/receiver.json',
-      outlineUrl: urlParams.get('outline') || 'data/outline.json',
+      outlineUrl: urlParams.get('outline') || 'api/outline.json',
       pollIntervalMs: 1000,
       initialCenter: [11.930735, 44.769651], // Stazione Fiscaglia (FE)
       initialZoom: 7.0,
       siteLat: 44.769651,
       siteLon: 11.930735,
       hasAntenna: true,
-      routeApiUrl: '/api/0/routeset'
+      routeApiUrl: 'api/0/routeset'
     };
 
     function calculateDistanceNm(lat1, lon1, lat2, lon2) {
@@ -3633,7 +3649,7 @@
         toastSwitched: "Lingua impostata: Italiano 🇮🇹"
       },
       en: {
-        pageTitle: "Fiscaglia ADS-B Station · Live Radar",
+        pageTitle: "ADS-B Station · Live Radar",
         brandSubtitle: "ADS-B Station",
         statTot: "Tot:",
         statTotTitle: "Total aircraft received by antenna",
@@ -3670,7 +3686,7 @@
         btnCoverageTitle: "Toggle Antenna Reception Range Contour (Outline)",
         btnGraphs: "Graphs",
         btnGraphsTitle: "Performance Telemetry & Charts",
-        sideStation: "Fiscaglia ADS-B Station",
+        sideStation: "ADS-B Station",
         panelAircraft: "Aircraft in View",
         sigAll: "ALL",
         sigAdsb: "ADS-B",
@@ -4849,7 +4865,7 @@
         features: [{
           type: 'Feature',
           geometry: { type: 'Point', coordinates: [lon, lat] },
-          properties: { name: 'Fiscaglia ADS-B Station' }
+          properties: { name: 'ADS-B Station' }
         }]
       };
 
@@ -7876,7 +7892,7 @@
           if (selectedHex !== (hex || '').toLowerCase()) return;
           fallback.innerHTML = `
             <div style="position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background: radial-gradient(circle at center, rgba(56, 189, 248,0.08) 0%, rgba(10,15,26,0.92) 80%);">
-              <img src="fiscaglia-favicon.svg" alt="" style="position:absolute; opacity:0.06; max-height:42px; pointer-events:none;">
+              <img src="station-logo.svg" alt="" style="position:absolute; opacity:0.06; max-height:42px; pointer-events:none;">
               <img src="${silUrl}" alt="${type}" style="max-height:75px; max-width:85%; object-fit:contain; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.6));">
             </div>
           `;
@@ -7894,7 +7910,7 @@
       const fallback = document.getElementById('cardPhotoFallback');
       fallback.innerHTML = `
         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:12px; text-align:center;">
-          <img src="fiscaglia-favicon.svg" alt="ADSBItalia" style="max-height:36px; opacity:0.35; margin-bottom:4px;">
+          <img src="station-logo.svg" alt="ADSBItalia" style="max-height:36px; opacity:0.35; margin-bottom:4px;">
           <span style="font-size:0.75rem; font-weight:600; color:var(--text-muted);">No photo available</span>
         </div>
       `;
