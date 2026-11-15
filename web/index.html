@@ -3258,7 +3258,7 @@
       
       const graphsBtn = document.getElementById('btnGraphs');
       const sideGraphsBtn = document.getElementById('sideGraphsBtn');
-      const targetGraphs = st.graphs_url || (window.location.origin + '/graphs/');
+      const targetGraphs = st.graphs_url || '/graphs/';
       if (graphsBtn) graphsBtn.href = targetGraphs;
       if (sideGraphsBtn) sideGraphsBtn.href = targetGraphs;
 
@@ -3273,6 +3273,9 @@
       }
       if (st.ring_color) {
         CONFIG.ringColor = st.ring_color;
+      }
+      if (st.ring_opacity != null) {
+        CONFIG.ringOpacity = parseFloat(st.ring_opacity) || 0.45;
       }
 
       // 3. Theme Colors

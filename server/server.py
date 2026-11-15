@@ -176,6 +176,13 @@ class StationRadarHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=WEB_DIR, **kwargs)
 
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Admin-Password, Authorization")
+        self.end_headers()
+
     def do_GET(self):
         clean_path = self.path.split("?")[0].rstrip("/")
 
@@ -196,17 +203,38 @@ class StationRadarHandler(SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(cfg_copy).encode("utf-8"))
             return
 
+        # Route: Airline banner index (local or CDN proxy)
+        if clean_path.endswith("/operator-banner-index.json"):
+            local_idx = os.path.join(WEB_DIR, "images/airline-banners/operator-banner-index.json")
+            if os.path.exists(local_idx) and os.path.getsize(local_idx) > 1000:
+                try:
+                    with open(local_idx, "rb") as f:
+                        data = f.read()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    self.wfile.write(data)
+                    return
+                except Exception:
+                    pass
+            try:
+                remote_url = "https://adsbitalia.it/images/airline-banners/operator-banner-index.json"
+                req = urllib.request.Request(remote_url, headers={"User-Agent": "ADSBItalia-Station-Radar/1.0"})
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    data = resp.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(data)
+                return
+            except Exception:
+                pass
+
         # Route: Outline Range Silhouette
         if clean_path == "/api/outline.json" or clean_path.endswith("/api/outline.json") or clean_path.endswith("/data/outline.json"):
             self.proxy_outline_json()
-            return
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            cfg = load_config()
-            self.wfile.write(json.dumps(cfg).encode("utf-8"))
             return
 
         # Route: Proxy / Local live aircraft data
@@ -231,7 +259,7 @@ class StationRadarHandler(SimpleHTTPRequestHandler):
             return
 
         # Route: Proxy / Local Flags (serves local bundled SVG, or fetches from adsbitalia CDN)
-        if clean_path.startswith("/flags/"):
+        if "/flags/" in clean_path:
             clean_rel = clean_path.lstrip("/")
             local_flag = os.path.join(WEB_DIR, clean_rel)
             if os.path.exists(local_flag):
@@ -260,7 +288,7 @@ class StationRadarHandler(SimpleHTTPRequestHandler):
                 return
 
         # Route: Proxy / Local Aircraft Silhouettes
-        if clean_path.startswith("/aircraft_sil/"):
+        if "/aircraft_sil/" in clean_path:
             clean_rel = clean_path.lstrip("/")
             local_sil = os.path.join(WEB_DIR, clean_rel)
             if os.path.exists(local_sil):

@@ -429,7 +429,7 @@
     </div>
     <div class="nav-actions">
       <a href="index.html" class="btn btn-secondary">‹ Back to Radar</a>
-      <a href="#" id="linkStationGraphs" target="_blank" class="btn btn-secondary">📈 Telemetry &amp; Graphs</a>
+      <a href="/graphs/" id="linkStationGraphs" target="_blank" class="btn btn-secondary">📈 Telemetry &amp; Graphs</a>
       <button id="btnSaveTop" class="btn btn-primary" onclick="saveConfiguration()">💾 Save Settings</button>
     </div>
   </header>
@@ -520,27 +520,27 @@
       </div>
 
       <div class="presets-grid">
-        <div class="preset-card active" onclick="applyThemePreset('cyan')">
+        <div class="preset-card active" onclick="applyThemePreset('cyan', this)">
           <div class="color-dot" style="background: #38bdf8;"></div>
           <div class="preset-name">Avionics Cyan</div>
         </div>
-        <div class="preset-card" onclick="applyThemePreset('emerald')">
+        <div class="preset-card" onclick="applyThemePreset('emerald', this)">
           <div class="color-dot" style="background: #10b981;"></div>
           <div class="preset-name">Radar Emerald</div>
         </div>
-        <div class="preset-card" onclick="applyThemePreset('amber')">
+        <div class="preset-card" onclick="applyThemePreset('amber', this)">
           <div class="color-dot" style="background: #f59e0b;"></div>
           <div class="preset-name">Amber Glow</div>
         </div>
-        <div class="preset-card" onclick="applyThemePreset('purple')">
+        <div class="preset-card" onclick="applyThemePreset('purple', this)">
           <div class="color-dot" style="background: #a855f7;"></div>
           <div class="preset-name">Stealth Night</div>
         </div>
-        <div class="preset-card" onclick="applyThemePreset('monochrome')">
+        <div class="preset-card" onclick="applyThemePreset('monochrome', this)">
           <div class="color-dot" style="background: #e2e8f0;"></div>
           <div class="preset-name">Arctic Mono</div>
         </div>
-        <div class="preset-card" onclick="applyThemePreset('crimson')">
+        <div class="preset-card" onclick="applyThemePreset('crimson', this)">
           <div class="color-dot" style="background: #ef4444;"></div>
           <div class="preset-name">Tactical Red</div>
         </div>
@@ -550,16 +550,16 @@
         <div class="form-group">
           <label>Primary / Accent Color</label>
           <div class="color-picker-row">
-            <input type="color" id="primaryColorPicker" value="#38bdf8" oninput="onColorChange()">
-            <input type="text" id="primaryColorText" value="#38bdf8" onchange="onColorTextChange()">
+            <input type="color" id="primaryColorPicker" value="#38bdf8" oninput="onPrimaryColorPicker(this)">
+            <input type="text" id="primaryColorText" value="#38bdf8" oninput="onPrimaryColorText(this)">
           </div>
         </div>
 
         <div class="form-group">
           <label>Range Rings Color</label>
           <div class="color-picker-row">
-            <input type="color" id="ringColorPicker" value="#38bdf8" oninput="onColorChange()">
-            <input type="text" id="ringColorText" value="#38bdf8" onchange="onColorTextChange()">
+            <input type="color" id="ringColorPicker" value="#38bdf8" oninput="onRingColorPicker(this)">
+            <input type="text" id="ringColorText" value="#38bdf8" oninput="onRingColorText(this)">
           </div>
         </div>
 
@@ -667,6 +667,33 @@
       </div>
     </section>
 
+    <!-- SECTION 5: SECURITY & ACCESS CONTROL -->
+    <section class="section-card">
+      <div class="section-header">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <div>
+            <h2>🔒 Security & Access Control</h2>
+            <p>Password protection for station settings (prevents unauthorized public changes)</p>
+          </div>
+          <span id="lockBadge" style="font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; letter-spacing: 0.5px; background: rgba(245, 158, 11, 0.2); color: #fbbf24;">🔓 UNLOCKED</span>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="adminPassword">Admin Password</label>
+          <input type="password" id="adminPassword" placeholder="Enter password to authorize changes">
+          <span class="hint">Required if ADMIN_PASSWORD is configured on container or server</span>
+        </div>
+
+        <div class="form-group">
+          <label for="newAdminPassword">Set / Change Password (Optional)</label>
+          <input type="password" id="newAdminPassword" placeholder="New password (or 'none' to remove)">
+          <span class="hint">Leave blank to keep existing password</span>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- BOTTOM FIXED ACTION BAR -->
@@ -692,10 +719,7 @@
     };
 
     async function loadConfiguration() {
-      const graphsLink = document.getElementById('linkStationGraphs');
-      if (graphsLink) {
-        graphsLink.href = `${window.location.protocol}//${window.location.hostname}:8085`;
-      }
+
       try {
         const res = await fetch('api/config');
         if (res.ok) {
@@ -852,12 +876,14 @@
       );
     }
 
-    function applyThemePreset(key) {
+    function applyThemePreset(key, el) {
       const p = THEME_PRESETS[key];
       if (!p) return;
 
       document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('active'));
-      event.currentTarget.classList.add('active');
+      if (el) {
+        el.classList.add('active');
+      }
 
       document.getElementById('primaryColorPicker').value = p.primary;
       document.getElementById('primaryColorText').value = p.primary;
@@ -867,16 +893,31 @@
       applyLiveTheme(p.primary);
     }
 
-    function onColorChange() {
-      const val = document.getElementById('primaryColorPicker').value;
+    function onPrimaryColorPicker(el) {
+      const val = el.value;
       document.getElementById('primaryColorText').value = val;
       applyLiveTheme(val);
     }
 
-    function onColorTextChange() {
-      const val = document.getElementById('primaryColorText').value;
-      document.getElementById('primaryColorText').value = val;
-      applyLiveTheme(val);
+    function onPrimaryColorText(el) {
+      let val = el.value.trim();
+      if (!val.startsWith('#')) val = '#' + val;
+      if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+        document.getElementById('primaryColorPicker').value = val;
+        applyLiveTheme(val);
+      }
+    }
+
+    function onRingColorPicker(el) {
+      document.getElementById('ringColorText').value = el.value;
+    }
+
+    function onRingColorText(el) {
+      let val = el.value.trim();
+      if (!val.startsWith('#')) val = '#' + val;
+      if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+        document.getElementById('ringColorPicker').value = val;
+      }
     }
 
     function applyLiveTheme(primaryColor) {
@@ -922,12 +963,16 @@
     async function saveConfiguration() {
       const rawRings = document.getElementById('rangeRings').value;
       const ringsArray = rawRings.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+      const adminPwd = (document.getElementById('adminPassword')?.value || sessionStorage.getItem('adsb_station_admin_pwd') || '').trim();
+      const newAdminPwd = (document.getElementById('newAdminPassword')?.value || '').trim();
 
       const payload = {
+        admin_password: adminPwd,
         station: {
           name: document.getElementById('stationName').value.trim() || 'ADS-B Station',
           subtitle: document.getElementById('stationSubtitle').value.trim(),
           website_url: document.getElementById('stationWebsite').value.trim(),
+          graphs_url: document.getElementById('graphsUrl')?.value.trim() || '/graphs/',
           logo_url: document.getElementById('stationLogo').value.trim(),
           lat: parseFloat(document.getElementById('stationLat').value) || 44.769651,
           lon: parseFloat(document.getElementById('stationLon').value) || 11.930735,
@@ -954,20 +999,56 @@
         }
       };
 
+      if (newAdminPwd) {
+        payload.new_admin_password = newAdminPwd;
+      }
+
       try {
         const res = await fetch('api/config', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Password': adminPwd
+          },
           body: JSON.stringify(payload)
         });
-        const result = await res.json();
-        if (result.ok) {
+
+        if (res.status === 401) {
+          const promptPwd = prompt('🔒 This station is protected by an admin password.\nPlease enter the password to save changes:');
+          if (promptPwd !== null && promptPwd.trim() !== '') {
+            document.getElementById('adminPassword').value = promptPwd.trim();
+            sessionStorage.setItem('adsb_station_admin_pwd', promptPwd.trim());
+            return saveConfiguration();
+          } else {
+            showToast('❌ Save aborted: Admin password required', 'error');
+            return;
+          }
+        }
+
+        let result;
+        try {
+          result = await res.json();
+        } catch (jsonErr) {
+          throw new Error('Server returned invalid response (HTTP ' + res.status + ')');
+        }
+
+        if (result && result.ok) {
+          if (adminPwd) sessionStorage.setItem('adsb_station_admin_pwd', adminPwd);
+          if (newAdminPwd) {
+            sessionStorage.setItem('adsb_station_admin_pwd', newAdminPwd === 'none' ? '' : newAdminPwd);
+            document.getElementById('adminPassword').value = newAdminPwd === 'none' ? '' : newAdminPwd;
+            document.getElementById('newAdminPassword').value = '';
+          }
           showToast('✅ All settings saved successfully!', 'success');
+          const targetGraphs = payload.station.graphs_url || '/graphs/';
+          const graphsLink = document.getElementById('linkStationGraphs');
+          if (graphsLink) graphsLink.href = targetGraphs;
         } else {
-          showToast('❌ Error saving settings: ' + result.error, 'error');
+          showToast('❌ Error: ' + ((result && result.error) || (result && result.message) || 'Unknown error'), 'error');
         }
       } catch (err) {
-        showToast('❌ Server connection error', 'error');
+        console.error('Save configuration error:', err);
+        showToast('❌ ' + (err.message || 'Server connection error'), 'error');
       }
     }
 
