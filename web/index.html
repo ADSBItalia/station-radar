@@ -6234,7 +6234,7 @@
       return null;
     }
 
-    function findClosestAirport(lon, lat, maxDistNm = 45, onlySuitableDiversion = false) {
+    function findClosestAirport(lon, lat, maxDistNm = 45, onlySuitableDiversion = false, ac = null) {
       if (lon == null || lat == null) return null;
       let closest = null;
       let minD = maxDistNm;
@@ -6252,13 +6252,30 @@
             ? p.icao.trim().toUpperCase() : null;
 
           if (onlySuitableDiversion) {
-            // Must have a genuine 3-letter IATA code OR official 4-letter ICAO code (no dashes/local grass strip IDs)
+            // Must have a genuine 3-letter IATA code OR official 4-letter ICAO code
             if (!iata && !icao) continue;
             const pType = (p.type || '').toLowerCase();
-            // Disqualify heliports, closed airfields, seaplane bases, balloonports
-            if (['heliport', 'closed', 'seaplane', 'balloonport'].includes(pType)) continue;
-            // Disqualify small ultralight/grass airfields unless commercial IATA or certified military
-            if (pType === 'small' && !iata && !p.mil) continue;
+            const pName = (p.name || '').toLowerCase();
+            const pCity = (p.city || '').toLowerCase();
+
+            // Strictly disqualify: small grass airfields, ultralights, heliports, closed, seaplane, balloonports
+            if (['small', 'heliport', 'closed', 'seaplane', 'balloonport'].includes(pType)) continue;
+
+            // Disqualify any grass strips, ultralight fields, glider clubs, soaring sites by name/city
+            if (pName.includes('ultralegger') || pName.includes('campo volo') || pName.includes('campo di volo') ||
+                pName.includes('aviosuperficie') || pName.includes('idrosuperficie') || pName.includes('glider') ||
+                pName.includes('soaring') || pName.includes('aliant') || pName.includes('pratone') ||
+                pCity.includes('campo volo') || pCity.includes('aviosuperficie')) {
+              continue;
+            }
+
+            // Diversion alternates for commercial/cargo airliners MUST be certified major or medium commercial airports with a genuine 3-letter IATA
+            if (pType !== 'major' && pType !== 'medium' && !p.mil) {
+              continue;
+            }
+            if (!iata && !p.mil) {
+              continue;
+            }
           }
 
           const [aLon, aLat] = feat.geometry.coordinates;
@@ -6281,10 +6298,10 @@
         }
       }
 
-      // 2. Fallback to airport coordinates lookup table
+      // 2. Fallback to airport coordinates lookup table (only genuine 3-letter IATA commercial airports)
       if (!closest) {
         for (const [code, coords] of Object.entries(AIRPORT_COORDS_FALLBACK)) {
-          if (onlySuitableDiversion && code.length !== 3 && code.length !== 4) continue;
+          if (onlySuitableDiversion && (code.length !== 3 || !/^[A-Z]{3}$/.test(code))) continue;
           const d = (typeof calculateDistanceNm === 'function')
             ? calculateDistanceNm(lat, lon, coords[1], coords[0])
             : (typeof haversineDistNm === 'function' ? haversineDistNm(lat, lon, coords[1], coords[0]) : null);
@@ -6403,10 +6420,12 @@
       }
 
       // Rule 4: Genuine in-flight diversion trigger conditions
+      // WITHOUT emergency squawk 7700, an aircraft landing at an airport other than scheduled destination
+      // is experiencing a STALE/WRONG ROUTE in our database, NOT an in-flight diversion!
+      // Only trigger in-flight diverting if emergency squawk 7700 is active.
       const isApproachingAlternate = (
         (isEmergencySquawk && vrate <= -300 && closest.distNm <= 20) ||
-        (alt < 7000 && vrate <= -400 && closest.distNm <= 12) ||
-        (alt < 2500 && closest.distNm <= 7)
+        (isEmergencySquawk && alt < 5000 && closest.distNm <= 12)
       );
 
       if (isApproachingAlternate) {
@@ -6420,6 +6439,74 @@
       return null;
     }
     window.detectFlightDiversion = detectFlightDiversion;
+
+    function isRoutePlausible(ac, r) {
+      if (!r || !r._airports || r._airports.length < 2) return false;
+      if (!ac || ac.lat == null || ac.lon == null) return true; // No live coordinates to contradict
+
+      // If explicit diversion confirmed or squawk 7700 emergency
+      if (r.diverted_to || (ac && ac.squawk === '7700')) return true;
+
+      const planeLat = Number(ac.lat);
+      const planeLon = Number(ac.lon);
+      if (isNaN(planeLat) || isNaN(planeLon) || (planeLat === 0 && planeLon === 0)) return true;
+
+      const origin = r._airports[0];
+      const dest = r._airports[r._airports.length - 1];
+
+      let origCoords = null;
+      let destCoords = null;
+
+      if (origin.lat != null && origin.lon != null) {
+        origCoords = [Number(origin.lat), Number(origin.lon)];
+      } else if (typeof findAirportMatch === 'function') {
+        const m = findAirportMatch(origin.iata || origin.icao || '');
+        if (m && m.geometry && m.geometry.coordinates) {
+          origCoords = [m.geometry.coordinates[1], m.geometry.coordinates[0]];
+        }
+      }
+
+      if (dest.lat != null && dest.lon != null) {
+        destCoords = [Number(dest.lat), Number(dest.lon)];
+      } else if (typeof findAirportMatch === 'function') {
+        const m = findAirportMatch(dest.iata || dest.icao || '');
+        if (m && m.geometry && m.geometry.coordinates) {
+          destCoords = [m.geometry.coordinates[1], m.geometry.coordinates[0]];
+        }
+      }
+
+      if (origCoords && destCoords) {
+        const dRoute = haversineDistNm(origCoords[0], origCoords[1], destCoords[0], destCoords[1]);
+        const dOrig = haversineDistNm(planeLat, planeLon, origCoords[0], origCoords[1]);
+        const dDest = haversineDistNm(planeLat, planeLon, destCoords[0], destCoords[1]);
+
+        // Check if aircraft is departing from route destination (turnaround next flight)
+        const alt = Number(ac.alt_baro != null ? ac.alt_baro : (ac.alt_geom || 0));
+        const vrate = Number(ac.baro_rate != null ? ac.baro_rate : (ac.geom_rate || 0));
+        if (dDest < 35 && alt > 400 && alt < 25000 && vrate > 250) {
+          return false; // Aircraft is climbing away from destination: previous flight leg is finished!
+        }
+        // Check if aircraft is landing far from destination (> 35 NM away, low altitude & descending)
+        if (dDest > 35 && alt > 0 && alt < 3500 && vrate < -250) {
+          return false; // Aircraft is on approach to land at a different airport: route is stale!
+        }
+
+        // 1. Distance from nearest route endpoint must be within route length + departure/arrival corridor buffer
+        const maxAllowedDistFromEndpoint = Math.max(dRoute + 450, 700);
+        if (Math.min(dOrig, dDest) > maxAllowedDistFromEndpoint) {
+          return false; // Plane is physically too far from both origin and destination!
+        }
+
+        // 2. Triangle inequality / corridor deviation check (great circle corridor + weather deviation)
+        const maxCorridorDeviation = dRoute * 1.5 + 500;
+        if ((dOrig + dDest) > maxCorridorDeviation) {
+          return false; // Plane is way off the flight corridor!
+        }
+      }
+
+      return true;
+    }
+    window.isRoutePlausible = isRoutePlausible;
 
     function generateGreatCircleTrack(origCoords, destCoords, flightTs = null, cruiseAlt = 36000, callsign = '') {
       if (!origCoords || !destCoords || origCoords.length < 2 || destCoords.length < 2) return [];
@@ -7220,6 +7307,46 @@
       }
     }
 
+    
+    // Automatic Dynamic Route Self-Updating Engine
+    // Continuously audits all aircraft on the map, evicts stale turnaround legs,
+    // and fetches fresh routes dynamically without human intervention.
+    setInterval(() => {
+      if (typeof aircraftMap === 'undefined' || !aircraftMap) return;
+      const nowTs = Date.now();
+      let needsQueue = 0;
+
+      for (const ac of aircraftMap.values()) {
+        if (!ac || !ac.flight) continue;
+        const cs = ac.flight.trim().toUpperCase();
+        if (cs.length < 3 || /^[0-9A-F]{6}$/i.test(cs)) continue;
+
+        const norm = typeof normalizedCallsign === 'function' ? normalizedCallsign(cs) : null;
+        const cached = routeCache.get(cs) || (norm ? routeCache.get(norm) : null);
+
+        if (cached && cached._airports && cached._airports.length >= 2) {
+          if (typeof isRoutePlausible === 'function' && !isRoutePlausible(ac, cached)) {
+            // Evict stale leg
+            routeCache.delete(cs);
+            if (norm) routeCache.delete(norm);
+            if (typeof queueRouteLookup === 'function') {
+              queueRouteLookup(cs, ac.lat, ac.lon);
+              needsQueue++;
+            }
+          }
+        } else if (!cached || cached.expires < nowTs) {
+          if (typeof queueRouteLookup === 'function') {
+            queueRouteLookup(cs, ac.lat, ac.lon);
+            needsQueue++;
+          }
+        }
+      }
+
+      if (needsQueue > 0 && typeof processRouteQueue === 'function') {
+        processRouteQueue();
+      }
+    }, 12000);
+
     // Single Flight Route Lookup (for click on plane)
     async function lookupFlightRoute(callsign, lat, lon) {
       if (!callsign) return;
@@ -7302,6 +7429,16 @@
 
     function displayRoute(r, targetAc) {
       const box = document.getElementById('cardRouteBox');
+      const ac = targetAc || (selectedHex ? aircraftMap.get(selectedHex) : null);
+      if (ac && typeof isRoutePlausible === 'function' && !isRoutePlausible(ac, r)) {
+        if (box) box.style.display = 'none';
+        const dBan = document.getElementById('cardDiversionBanner');
+        if (dBan) dBan.style.display = 'none';
+        currentRouteOrigin = null;
+        currentRouteDest = null;
+        currentRouteDiverted = null;
+        return;
+      }
       const dBan = document.getElementById('cardDiversionBanner');
       if (!r || !r._airports || r._airports.length < 2) {
         if (box) box.style.display = 'none';
@@ -8079,7 +8216,7 @@
           const cs = ac.flight.trim().toUpperCase();
           const norm = normalizedCallsign(cs);
           const rObj = routeCache.get(cs) || (norm ? routeCache.get(norm) : null);
-          if (rObj && rObj._airports && rObj._airports.length >= 2) {
+          if (rObj && rObj._airports && rObj._airports.length >= 2 && (typeof isRoutePlausible !== 'function' || isRoutePlausible(ac, rObj))) {
             const o = rObj._airports[0].iata || rObj._airports[0].icao;
             const d = rObj._airports[rObj._airports.length - 1].iata || rObj._airports[rObj._airports.length - 1].icao;
             const title = `${rObj._airports[0].location || rObj._airports[0].name || o} ➔ ${rObj._airports[rObj._airports.length - 1].location || rObj._airports[rObj._airports.length - 1].name || d}`;
