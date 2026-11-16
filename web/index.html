@@ -6420,12 +6420,12 @@
       }
 
       // Rule 4: Genuine in-flight diversion trigger conditions
-      // WITHOUT emergency squawk 7700, an aircraft landing at an airport other than scheduled destination
-      // is experiencing a STALE/WRONG ROUTE in our database, NOT an in-flight diversion!
-      // Only trigger in-flight diverting if emergency squawk 7700 is active.
+      // Supports ALL reasons: weather (thunderstorms/snow/wind), ATC congestion, fuel diversion, or emergency (7700).
+      // Note: closest is strictly filtered to certified major/medium commercial airports (no grass/ultralight fields).
       const isApproachingAlternate = (
-        (isEmergencySquawk && vrate <= -300 && closest.distNm <= 20) ||
-        (isEmergencySquawk && alt < 5000 && closest.distNm <= 12)
+        (isEmergencySquawk && vrate <= -300 && closest.distNm <= 25) ||
+        (alt < 8000 && vrate <= -350 && closest.distNm <= 15) ||
+        (alt < 3000 && closest.distNm <= 8)
       );
 
       if (isApproachingAlternate) {
