@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Station Settings · ADSBItalia Radar</title>
-  <link rel="icon" type="image/svg+xml" href="station-logo.svg">
+  <link rel="icon" type="image/svg+xml" href="fiscaglia-favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -421,7 +421,7 @@
 
   <header>
     <div class="brand-group">
-      <img id="headerLogo" src="station-logo.svg" alt="Station Logo" class="brand-logo">
+      <img id="headerLogo" src="fiscaglia-favicon.svg" alt="Station Logo" class="brand-logo">
       <div class="brand-text">
         <h1 id="headerStationTitle">Station Settings · Control Panel</h1>
         <p>ADSBItalia Station Edition · Autonomous Radar</p>
@@ -429,7 +429,7 @@
     </div>
     <div class="nav-actions">
       <a href="index.html" class="btn btn-secondary">‹ Back to Radar</a>
-      <a href="/graphs/" id="linkStationGraphs" target="_blank" class="btn btn-secondary">📈 Telemetry &amp; Graphs</a>
+      <a href="#" id="linkStationGraphs" target="_blank" class="btn btn-secondary">📈 Telemetry &amp; Graphs</a>
       <button id="btnSaveTop" class="btn btn-primary" onclick="saveConfiguration()">💾 Save Settings</button>
     </div>
   </header>
@@ -461,12 +461,6 @@
           <input type="text" id="stationWebsite" placeholder="https://adsbitalia.it">
           <span class="hint">Opened when clicking the station logo</span>
         </div>
-
-      <div class="form-group">
-        <label for="graphsUrl">Telemetry & Graphs URL</label>
-        <input type="text" id="graphsUrl" placeholder="/graphs/ or http://192.168.1.50:8085">
-        <span class="help-text">URL or path to graphs1090 telemetry dashboard (defaults to /graphs/)</span>
-      </div>
 
         <div class="form-group">
           <label for="stationLogo">Station Logo / Crest (URL or File)</label>
@@ -520,27 +514,27 @@
       </div>
 
       <div class="presets-grid">
-        <div class="preset-card active" onclick="applyThemePreset('cyan', this)">
+        <div class="preset-card active" onclick="applyThemePreset('cyan')">
           <div class="color-dot" style="background: #38bdf8;"></div>
           <div class="preset-name">Avionics Cyan</div>
         </div>
-        <div class="preset-card" onclick="applyThemePreset('emerald', this)">
+        <div class="preset-card" onclick="applyThemePreset('emerald')">
           <div class="color-dot" style="background: #10b981;"></div>
           <div class="preset-name">Radar Emerald</div>
         </div>
-        <div class="preset-card" onclick="applyThemePreset('amber', this)">
+        <div class="preset-card" onclick="applyThemePreset('amber')">
           <div class="color-dot" style="background: #f59e0b;"></div>
           <div class="preset-name">Amber Glow</div>
         </div>
-        <div class="preset-card" onclick="applyThemePreset('purple', this)">
+        <div class="preset-card" onclick="applyThemePreset('purple')">
           <div class="color-dot" style="background: #a855f7;"></div>
           <div class="preset-name">Stealth Night</div>
         </div>
-        <div class="preset-card" onclick="applyThemePreset('monochrome', this)">
+        <div class="preset-card" onclick="applyThemePreset('monochrome')">
           <div class="color-dot" style="background: #e2e8f0;"></div>
           <div class="preset-name">Arctic Mono</div>
         </div>
-        <div class="preset-card" onclick="applyThemePreset('crimson', this)">
+        <div class="preset-card" onclick="applyThemePreset('crimson')">
           <div class="color-dot" style="background: #ef4444;"></div>
           <div class="preset-name">Tactical Red</div>
         </div>
@@ -550,16 +544,16 @@
         <div class="form-group">
           <label>Primary / Accent Color</label>
           <div class="color-picker-row">
-            <input type="color" id="primaryColorPicker" value="#38bdf8" oninput="onPrimaryColorPicker(this)">
-            <input type="text" id="primaryColorText" value="#38bdf8" oninput="onPrimaryColorText(this)">
+            <input type="color" id="primaryColorPicker" value="#38bdf8" oninput="onColorChange()">
+            <input type="text" id="primaryColorText" value="#38bdf8" onchange="onColorTextChange()">
           </div>
         </div>
 
         <div class="form-group">
           <label>Range Rings Color</label>
           <div class="color-picker-row">
-            <input type="color" id="ringColorPicker" value="#38bdf8" oninput="onRingColorPicker(this)">
-            <input type="text" id="ringColorText" value="#38bdf8" oninput="onRingColorText(this)">
+            <input type="color" id="ringColorPicker" value="#38bdf8" oninput="onColorChange()">
+            <input type="text" id="ringColorText" value="#38bdf8" onchange="onColorTextChange()">
           </div>
         </div>
 
@@ -642,6 +636,16 @@
             <span class="slider"></span>
           </label>
         </div>
+
+        <div class="toggle-item" style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.06);">
+          <div class="toggle-info">
+            <h4>📊 Station Graphs &amp; Telemetry URL</h4>
+            <p>Target destination for the "Graphs" button (default <code>/graphs/</code>, or external e.g. <code>https://domain.com/station-graphs</code>, <code>http://host:8085</code>)</p>
+          </div>
+          <div class="input-wrap" style="width:280px;">
+            <input type="text" id="graphsUrl" class="input-field" placeholder="/graphs/">
+          </div>
+        </div>
       </div>
     </section>
 
@@ -663,33 +667,6 @@
           <label for="pollInterval">Polling Refresh Interval (ms)</label>
           <input type="number" id="pollInterval" step="100" min="500" max="10000" value="1000">
           <span class="hint">1000 ms = 1 second (1000-2000 ms recommended)</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION 5: SECURITY & ACCESS CONTROL -->
-    <section class="section-card">
-      <div class="section-header">
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-          <div>
-            <h2>🔒 Security & Access Control</h2>
-            <p>Password protection for station settings (prevents unauthorized public changes)</p>
-          </div>
-          <span id="lockBadge" style="font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; letter-spacing: 0.5px; background: rgba(245, 158, 11, 0.2); color: #fbbf24;">🔓 UNLOCKED</span>
-        </div>
-      </div>
-
-      <div class="form-grid">
-        <div class="form-group">
-          <label for="adminPassword">Admin Password</label>
-          <input type="password" id="adminPassword" placeholder="Enter password to authorize changes">
-          <span class="hint">Required if ADMIN_PASSWORD is configured on container or server</span>
-        </div>
-
-        <div class="form-group">
-          <label for="newAdminPassword">Set / Change Password (Optional)</label>
-          <input type="password" id="newAdminPassword" placeholder="New password (or 'none' to remove)">
-          <span class="hint">Leave blank to keep existing password</span>
         </div>
       </div>
     </section>
@@ -719,9 +696,12 @@
     };
 
     async function loadConfiguration() {
-
+      const graphsLink = document.getElementById('linkStationGraphs');
+      if (graphsLink) {
+        graphsLink.href = `${window.location.protocol}//${window.location.hostname}:8085`;
+      }
       try {
-        const res = await fetch('api/config');
+        const res = await fetch('/api/config');
         if (res.ok) {
           currentConfig = await res.json();
           populateFields(currentConfig);
@@ -733,60 +713,6 @@
 
     function populateFields(cfg) {
       const st = cfg.station || {};
-      const graphsLink = document.getElementById('linkStationGraphs');
-      if (graphsLink) {
-        const targetGraphs = st.graphs_url || (window.location.origin + '/graphs/');
-        graphsLink.href = targetGraphs;
-      }
-      const graphsInput = document.getElementById('graphsUrl');
-      if (graphsInput) {
-        graphsInput.value = st.graphs_url || '';
-      }
-
-      // Security status
-      const lockBadge = document.getElementById('lockBadge');
-      if (lockBadge) {
-        if (cfg.is_protected) {
-          lockBadge.textContent = '🔒 PROTECTED';
-          lockBadge.style.background = 'rgba(16, 185, 129, 0.2)';
-          lockBadge.style.color = '#34d399';
-        } else {
-          lockBadge.textContent = '🔓 UNLOCKED';
-          lockBadge.style.background = 'rgba(245, 158, 11, 0.2)';
-          lockBadge.style.color = '#fbbf24';
-        }
-      }
-      const savedPwd = sessionStorage.getItem('adsb_station_admin_pwd');
-      if (savedPwd && document.getElementById('adminPassword')) {
-        document.getElementById('adminPassword').value = savedPwd;
-      }
-      const graphsLink = document.getElementById('linkStationGraphs');
-      if (graphsLink) {
-        const targetGraphs = st.graphs_url || (window.location.origin + '/graphs/');
-        graphsLink.href = targetGraphs;
-      }
-      const graphsInput = document.getElementById('graphsUrl');
-      if (graphsInput) {
-        graphsInput.value = st.graphs_url || '';
-      }
-
-      // Security status
-      const lockBadge = document.getElementById('lockBadge');
-      if (lockBadge) {
-        if (cfg.is_protected) {
-          lockBadge.textContent = '🔒 PROTECTED';
-          lockBadge.style.background = 'rgba(16, 185, 129, 0.2)';
-          lockBadge.style.color = '#34d399';
-        } else {
-          lockBadge.textContent = '🔓 UNLOCKED';
-          lockBadge.style.background = 'rgba(245, 158, 11, 0.2)';
-          lockBadge.style.color = '#fbbf24';
-        }
-      }
-      const savedPwd = sessionStorage.getItem('adsb_station_admin_pwd');
-      if (savedPwd && document.getElementById('adminPassword')) {
-        document.getElementById('adminPassword').value = savedPwd;
-      }
       const src = cfg.source || {};
       const th = cfg.theme || {};
       const feat = cfg.features || {};
@@ -817,6 +743,11 @@
       document.getElementById('enableClouds').checked = feat.enable_clouds !== false;
       document.getElementById('enableDiversions').checked = feat.enable_diversions !== false;
       document.getElementById('enableMilitary').checked = feat.enable_military_filter !== false;
+      document.getElementById('graphsUrl').value = feat.graphs_url || '/graphs/';
+      if (feat.graphs_url) {
+        const graphsLink = document.getElementById('linkStationGraphs');
+        if (graphsLink) graphsLink.href = feat.graphs_url;
+      }
 
       // Update header logo & title
       if (st.name) document.getElementById('headerStationTitle').textContent = `${st.name} · Settings`;
@@ -876,14 +807,12 @@
       );
     }
 
-    function applyThemePreset(key, el) {
+    function applyThemePreset(key) {
       const p = THEME_PRESETS[key];
       if (!p) return;
 
       document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('active'));
-      if (el) {
-        el.classList.add('active');
-      }
+      event.currentTarget.classList.add('active');
 
       document.getElementById('primaryColorPicker').value = p.primary;
       document.getElementById('primaryColorText').value = p.primary;
@@ -893,31 +822,16 @@
       applyLiveTheme(p.primary);
     }
 
-    function onPrimaryColorPicker(el) {
-      const val = el.value;
+    function onColorChange() {
+      const val = document.getElementById('primaryColorPicker').value;
       document.getElementById('primaryColorText').value = val;
       applyLiveTheme(val);
     }
 
-    function onPrimaryColorText(el) {
-      let val = el.value.trim();
-      if (!val.startsWith('#')) val = '#' + val;
-      if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
-        document.getElementById('primaryColorPicker').value = val;
-        applyLiveTheme(val);
-      }
-    }
-
-    function onRingColorPicker(el) {
-      document.getElementById('ringColorText').value = el.value;
-    }
-
-    function onRingColorText(el) {
-      let val = el.value.trim();
-      if (!val.startsWith('#')) val = '#' + val;
-      if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
-        document.getElementById('ringColorPicker').value = val;
-      }
+    function onColorTextChange() {
+      const val = document.getElementById('primaryColorText').value;
+      document.getElementById('primaryColorText').value = val;
+      applyLiveTheme(val);
     }
 
     function applyLiveTheme(primaryColor) {
@@ -946,7 +860,7 @@
 
       showToast('Uploading logo...', 'success');
       try {
-        const res = await fetch('api/upload-logo', { method: 'POST', body: formData });
+        const res = await fetch('/api/upload-logo', { method: 'POST', body: formData });
         const data = await res.json();
         if (data.ok) {
           document.getElementById('stationLogo').value = data.logo_url;
@@ -963,16 +877,12 @@
     async function saveConfiguration() {
       const rawRings = document.getElementById('rangeRings').value;
       const ringsArray = rawRings.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
-      const adminPwd = (document.getElementById('adminPassword')?.value || sessionStorage.getItem('adsb_station_admin_pwd') || '').trim();
-      const newAdminPwd = (document.getElementById('newAdminPassword')?.value || '').trim();
 
       const payload = {
-        admin_password: adminPwd,
         station: {
           name: document.getElementById('stationName').value.trim() || 'ADS-B Station',
           subtitle: document.getElementById('stationSubtitle').value.trim(),
           website_url: document.getElementById('stationWebsite').value.trim(),
-          graphs_url: document.getElementById('graphsUrl')?.value.trim() || '/graphs/',
           logo_url: document.getElementById('stationLogo').value.trim(),
           lat: parseFloat(document.getElementById('stationLat').value) || 44.769651,
           lon: parseFloat(document.getElementById('stationLon').value) || 11.930735,
@@ -995,60 +905,25 @@
           enable_weather_radar: document.getElementById('enableWeather').checked,
           enable_clouds: document.getElementById('enableClouds').checked,
           enable_diversions: document.getElementById('enableDiversions').checked,
-          enable_military_filter: document.getElementById('enableMilitary').checked
+          enable_military_filter: document.getElementById('enableMilitary').checked,
+          graphs_url: document.getElementById('graphsUrl').value.trim() || '/graphs/'
         }
       };
 
-      if (newAdminPwd) {
-        payload.new_admin_password = newAdminPwd;
-      }
-
       try {
-        const res = await fetch('api/config', {
+        const res = await fetch('/api/config', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Admin-Password': adminPwd
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-
-        if (res.status === 401) {
-          const promptPwd = prompt('🔒 This station is protected by an admin password.\nPlease enter the password to save changes:');
-          if (promptPwd !== null && promptPwd.trim() !== '') {
-            document.getElementById('adminPassword').value = promptPwd.trim();
-            sessionStorage.setItem('adsb_station_admin_pwd', promptPwd.trim());
-            return saveConfiguration();
-          } else {
-            showToast('❌ Save aborted: Admin password required', 'error');
-            return;
-          }
-        }
-
-        let result;
-        try {
-          result = await res.json();
-        } catch (jsonErr) {
-          throw new Error('Server returned invalid response (HTTP ' + res.status + ')');
-        }
-
-        if (result && result.ok) {
-          if (adminPwd) sessionStorage.setItem('adsb_station_admin_pwd', adminPwd);
-          if (newAdminPwd) {
-            sessionStorage.setItem('adsb_station_admin_pwd', newAdminPwd === 'none' ? '' : newAdminPwd);
-            document.getElementById('adminPassword').value = newAdminPwd === 'none' ? '' : newAdminPwd;
-            document.getElementById('newAdminPassword').value = '';
-          }
+        const result = await res.json();
+        if (result.ok) {
           showToast('✅ All settings saved successfully!', 'success');
-          const targetGraphs = payload.station.graphs_url || '/graphs/';
-          const graphsLink = document.getElementById('linkStationGraphs');
-          if (graphsLink) graphsLink.href = targetGraphs;
         } else {
-          showToast('❌ Error: ' + ((result && result.error) || (result && result.message) || 'Unknown error'), 'error');
+          showToast('❌ Error saving settings: ' + result.error, 'error');
         }
       } catch (err) {
-        console.error('Save configuration error:', err);
-        showToast('❌ ' + (err.message || 'Server connection error'), 'error');
+        showToast('❌ Server connection error', 'error');
       }
     }
 

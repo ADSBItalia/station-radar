@@ -7,9 +7,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>ADS-B Station · Live Radar</title>
   
-  <link rel="icon" type="image/svg+xml" href="station-logo.svg">
-  <link rel="shortcut icon" href="station-logo.svg">
-  <link rel="shortcut icon" type="image/x-icon" href="station-logo.svg">
+  <link rel="icon" type="image/svg+xml" href="fiscaglia-favicon.svg">
+  <link rel="shortcut icon" href="fiscaglia-favicon.svg">
+  <link rel="shortcut icon" type="image/x-icon" href="fiscaglia-favicon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -2620,10 +2620,10 @@
   <!-- Top Navigation Bar -->
   <header class="top-bar glass notranslate" translate="no">
     <!-- Brand -->
-    <a href="javascript:void(0)" id="brandStationLink" class="brand" title="ADS-B Station">
-      <img src="station-logo.svg" class="brand-logo-img" alt="ADS-B Station" style="height:36px; width:36px; border-radius:50%; object-fit:cover; border:1px solid rgba(56, 189, 248, 0.45);">
+    <a href="https://www.djrexishere.it" target="_blank" class="brand" title="ADS-B Station (djrexishere.it)">
+      <img src="fiscaglia-favicon.svg" class="brand-logo-img" alt="ADS-B Station" style="height:36px; width:36px; border-radius:50%; object-fit:cover; border:1px solid rgba(56, 189, 248, 0.45);">
       <span class="brand-title" style="display:flex; flex-direction:column; line-height:1.15; margin-left:6px;">
-        <span id="brandStationSubtitle" style="font-weight:700; color:#f0f6fc; font-size:13px; letter-spacing:0.02em;">ADS-B Station</span>
+        <span id="brandStationSubtitle" style="font-weight:700; color:#f0f6fc; font-size:13px; letter-spacing:0.02em;">Stazione ADS-B</span>
         <span style="color:#38bdf8; font-weight:700; font-size:11px; letter-spacing:0.05em;">RADAR LIVE</span>
       </span>
     </a>
@@ -2727,7 +2727,7 @@
     <!-- Station Branding Banner -->
     <div class="sidebar-header-branding" style="padding: 12px 14px; background: linear-gradient(135deg, rgba(7, 23, 36, 0.95), rgba(11, 34, 52, 0.98)); border-bottom: 1px solid rgba(56, 189, 248, 0.16); display:flex; align-items:center; justify-content:space-between; gap:10px;">
       <div style="display:flex; align-items:center; gap:10px;">
-        <img src="station-logo.svg" alt="ADS-B Station" style="height:42px; width:42px; border-radius:50%; border:1px solid rgba(56, 189, 248, 0.35);">
+        <img src="fiscaglia-favicon.svg" alt="ADS-B Station" style="height:42px; width:42px; border-radius:50%; border:1px solid rgba(56, 189, 248, 0.35);">
         <div>
           <div id="sideStationTitle" style="font-size:13px; font-weight:700; color:#f0f6fc;">ADS-B Station</div>
           <div style="font-size:11px; color:#9eb7c5; font-family:'JetBrains Mono',monospace;">FE · 44.7697°N, 11.9307°E</div>
@@ -3142,7 +3142,7 @@
         <span>🗺️</span>
         <span id="filterAirportBtnText">Filter map for this airport</span>
       </button>
-      <div class="airport-live-badge">📡 <span id="badgeStationName">ADS-B Station</span> · Live Reception</div>
+      <div class="airport-live-badge">📡 Fiscaglia ADS-B Station · Live Reception</div>
     </div>
   </aside>
 
@@ -3241,26 +3241,10 @@
         const fav = document.getElementById('dynamicFavicon');
         if (fav) fav.href = st.logo_url;
       }
-      const brandLink = document.getElementById('brandStationLink') || document.querySelector('a.brand');
-      if (brandLink) {
-        if (st.website_url && st.website_url.trim() && st.website_url !== '#') {
-          brandLink.href = st.website_url.trim();
-          brandLink.target = '_blank';
-          brandLink.title = st.name || 'ADS-B Station';
-        } else {
-          brandLink.href = 'javascript:void(0)';
-          brandLink.removeAttribute('target');
-          brandLink.title = st.name || 'ADS-B Station';
-        }
+      if (st.website_url) {
+        const brandLink = document.querySelector('a.brand');
+        if (brandLink) brandLink.href = st.website_url;
       }
-      const badgeStation = document.getElementById('badgeStationName');
-      if (badgeStation && st.name) badgeStation.textContent = st.name;
-      
-      const graphsBtn = document.getElementById('btnGraphs');
-      const sideGraphsBtn = document.getElementById('sideGraphsBtn');
-      const targetGraphs = st.graphs_url || '/graphs/';
-      if (graphsBtn) graphsBtn.href = targetGraphs;
-      if (sideGraphsBtn) sideGraphsBtn.href = targetGraphs;
 
       // 2. Coordinates & Range Rings
       if (st.lat != null && st.lon != null) {
@@ -3273,9 +3257,6 @@
       }
       if (st.ring_color) {
         CONFIG.ringColor = st.ring_color;
-      }
-      if (st.ring_opacity != null) {
-        CONFIG.ringOpacity = parseFloat(st.ring_opacity) || 0.45;
       }
 
       // 3. Theme Colors
@@ -3290,19 +3271,26 @@
       CONFIG.enablePhotos = (feat.enable_photos !== false);
       CONFIG.enableDiversions = (feat.enable_diversions !== false);
       CONFIG.enableMilitary = (feat.enable_military_filter !== false);
+      const graphsUrl = feat.graphs_url || st.graphs_url || cfg.graphs_url;
+      if (graphsUrl) {
+        const btnG = document.getElementById('btnGraphs');
+        if (btnG) btnG.href = graphsUrl;
+        const sideG = document.getElementById('sideGraphsBtn');
+        if (sideG) sideG.href = graphsUrl;
+      }
     }
 
     const CONFIG = {
       dataUrl: urlParams.get('data') || 'api/aircraft.json',
       receiverUrl: urlParams.get('receiver') || 'api/receiver.json',
-      outlineUrl: urlParams.get('outline') || 'api/outline.json',
+      outlineUrl: urlParams.get('outline') || 'data/outline.json',
       pollIntervalMs: 1000,
       initialCenter: [11.930735, 44.769651], // Stazione Fiscaglia (FE)
       initialZoom: 7.0,
       siteLat: 44.769651,
       siteLon: 11.930735,
       hasAntenna: true,
-      routeApiUrl: 'api/0/routeset'
+      routeApiUrl: '/api/0/routeset'
     };
 
     function calculateDistanceNm(lat1, lon1, lat2, lon2) {
@@ -3652,7 +3640,7 @@
         toastSwitched: "Lingua impostata: Italiano 🇮🇹"
       },
       en: {
-        pageTitle: "ADS-B Station · Live Radar",
+        pageTitle: "Fiscaglia ADS-B Station · Live Radar",
         brandSubtitle: "ADS-B Station",
         statTot: "Tot:",
         statTotTitle: "Total aircraft received by antenna",
@@ -3689,7 +3677,7 @@
         btnCoverageTitle: "Toggle Antenna Reception Range Contour (Outline)",
         btnGraphs: "Graphs",
         btnGraphsTitle: "Performance Telemetry & Charts",
-        sideStation: "ADS-B Station",
+        sideStation: "Fiscaglia ADS-B Station",
         panelAircraft: "Aircraft in View",
         sigAll: "ALL",
         sigAdsb: "ADS-B",
@@ -4868,7 +4856,7 @@
         features: [{
           type: 'Feature',
           geometry: { type: 'Point', coordinates: [lon, lat] },
-          properties: { name: 'ADS-B Station' }
+          properties: { name: 'Fiscaglia ADS-B Station' }
         }]
       };
 
@@ -6234,7 +6222,7 @@
       return null;
     }
 
-    function findClosestAirport(lon, lat, maxDistNm = 45, onlySuitableDiversion = false, ac = null) {
+    function findClosestAirport(lon, lat, maxDistNm = 45, onlySuitableDiversion = false) {
       if (lon == null || lat == null) return null;
       let closest = null;
       let minD = maxDistNm;
@@ -6252,30 +6240,13 @@
             ? p.icao.trim().toUpperCase() : null;
 
           if (onlySuitableDiversion) {
-            // Must have a genuine 3-letter IATA code OR official 4-letter ICAO code
+            // Must have a genuine 3-letter IATA code OR official 4-letter ICAO code (no dashes/local grass strip IDs)
             if (!iata && !icao) continue;
             const pType = (p.type || '').toLowerCase();
-            const pName = (p.name || '').toLowerCase();
-            const pCity = (p.city || '').toLowerCase();
-
-            // Strictly disqualify: small grass airfields, ultralights, heliports, closed, seaplane, balloonports
-            if (['small', 'heliport', 'closed', 'seaplane', 'balloonport'].includes(pType)) continue;
-
-            // Disqualify any grass strips, ultralight fields, glider clubs, soaring sites by name/city
-            if (pName.includes('ultralegger') || pName.includes('campo volo') || pName.includes('campo di volo') ||
-                pName.includes('aviosuperficie') || pName.includes('idrosuperficie') || pName.includes('glider') ||
-                pName.includes('soaring') || pName.includes('aliant') || pName.includes('pratone') ||
-                pCity.includes('campo volo') || pCity.includes('aviosuperficie')) {
-              continue;
-            }
-
-            // Diversion alternates for commercial/cargo airliners MUST be certified major or medium commercial airports with a genuine 3-letter IATA
-            if (pType !== 'major' && pType !== 'medium' && !p.mil) {
-              continue;
-            }
-            if (!iata && !p.mil) {
-              continue;
-            }
+            // Disqualify heliports, closed airfields, seaplane bases, balloonports
+            if (['heliport', 'closed', 'seaplane', 'balloonport'].includes(pType)) continue;
+            // Disqualify small ultralight/grass airfields unless commercial IATA or certified military
+            if (pType === 'small' && !iata && !p.mil) continue;
           }
 
           const [aLon, aLat] = feat.geometry.coordinates;
@@ -6298,10 +6269,10 @@
         }
       }
 
-      // 2. Fallback to airport coordinates lookup table (only genuine 3-letter IATA commercial airports)
+      // 2. Fallback to airport coordinates lookup table
       if (!closest) {
         for (const [code, coords] of Object.entries(AIRPORT_COORDS_FALLBACK)) {
-          if (onlySuitableDiversion && (code.length !== 3 || !/^[A-Z]{3}$/.test(code))) continue;
+          if (onlySuitableDiversion && code.length !== 3 && code.length !== 4) continue;
           const d = (typeof calculateDistanceNm === 'function')
             ? calculateDistanceNm(lat, lon, coords[1], coords[0])
             : (typeof haversineDistNm === 'function' ? haversineDistNm(lat, lon, coords[1], coords[0]) : null);
@@ -6420,12 +6391,10 @@
       }
 
       // Rule 4: Genuine in-flight diversion trigger conditions
-      // Supports ALL reasons: weather (thunderstorms/snow/wind), ATC congestion, fuel diversion, or emergency (7700).
-      // Note: closest is strictly filtered to certified major/medium commercial airports (no grass/ultralight fields).
       const isApproachingAlternate = (
-        (isEmergencySquawk && vrate <= -300 && closest.distNm <= 25) ||
-        (alt < 8000 && vrate <= -350 && closest.distNm <= 15) ||
-        (alt < 3000 && closest.distNm <= 8)
+        (isEmergencySquawk && vrate <= -300 && closest.distNm <= 20) ||
+        (alt < 7000 && vrate <= -400 && closest.distNm <= 12) ||
+        (alt < 2500 && closest.distNm <= 7)
       );
 
       if (isApproachingAlternate) {
@@ -6439,74 +6408,6 @@
       return null;
     }
     window.detectFlightDiversion = detectFlightDiversion;
-
-    function isRoutePlausible(ac, r) {
-      if (!r || !r._airports || r._airports.length < 2) return false;
-      if (!ac || ac.lat == null || ac.lon == null) return true; // No live coordinates to contradict
-
-      // If explicit diversion confirmed or squawk 7700 emergency
-      if (r.diverted_to || (ac && ac.squawk === '7700')) return true;
-
-      const planeLat = Number(ac.lat);
-      const planeLon = Number(ac.lon);
-      if (isNaN(planeLat) || isNaN(planeLon) || (planeLat === 0 && planeLon === 0)) return true;
-
-      const origin = r._airports[0];
-      const dest = r._airports[r._airports.length - 1];
-
-      let origCoords = null;
-      let destCoords = null;
-
-      if (origin.lat != null && origin.lon != null) {
-        origCoords = [Number(origin.lat), Number(origin.lon)];
-      } else if (typeof findAirportMatch === 'function') {
-        const m = findAirportMatch(origin.iata || origin.icao || '');
-        if (m && m.geometry && m.geometry.coordinates) {
-          origCoords = [m.geometry.coordinates[1], m.geometry.coordinates[0]];
-        }
-      }
-
-      if (dest.lat != null && dest.lon != null) {
-        destCoords = [Number(dest.lat), Number(dest.lon)];
-      } else if (typeof findAirportMatch === 'function') {
-        const m = findAirportMatch(dest.iata || dest.icao || '');
-        if (m && m.geometry && m.geometry.coordinates) {
-          destCoords = [m.geometry.coordinates[1], m.geometry.coordinates[0]];
-        }
-      }
-
-      if (origCoords && destCoords) {
-        const dRoute = haversineDistNm(origCoords[0], origCoords[1], destCoords[0], destCoords[1]);
-        const dOrig = haversineDistNm(planeLat, planeLon, origCoords[0], origCoords[1]);
-        const dDest = haversineDistNm(planeLat, planeLon, destCoords[0], destCoords[1]);
-
-        // Check if aircraft is departing from route destination (turnaround next flight)
-        const alt = Number(ac.alt_baro != null ? ac.alt_baro : (ac.alt_geom || 0));
-        const vrate = Number(ac.baro_rate != null ? ac.baro_rate : (ac.geom_rate || 0));
-        if (dDest < 35 && alt > 400 && alt < 25000 && vrate > 250) {
-          return false; // Aircraft is climbing away from destination: previous flight leg is finished!
-        }
-        // Check if aircraft is landing far from destination (> 35 NM away, low altitude & descending)
-        if (dDest > 35 && alt > 0 && alt < 3500 && vrate < -250) {
-          return false; // Aircraft is on approach to land at a different airport: route is stale!
-        }
-
-        // 1. Distance from nearest route endpoint must be within route length + departure/arrival corridor buffer
-        const maxAllowedDistFromEndpoint = Math.max(dRoute + 450, 700);
-        if (Math.min(dOrig, dDest) > maxAllowedDistFromEndpoint) {
-          return false; // Plane is physically too far from both origin and destination!
-        }
-
-        // 2. Triangle inequality / corridor deviation check (great circle corridor + weather deviation)
-        const maxCorridorDeviation = dRoute * 1.5 + 500;
-        if ((dOrig + dDest) > maxCorridorDeviation) {
-          return false; // Plane is way off the flight corridor!
-        }
-      }
-
-      return true;
-    }
-    window.isRoutePlausible = isRoutePlausible;
 
     function generateGreatCircleTrack(origCoords, destCoords, flightTs = null, cruiseAlt = 36000, callsign = '') {
       if (!origCoords || !destCoords || origCoords.length < 2 || destCoords.length < 2) return [];
@@ -7307,46 +7208,6 @@
       }
     }
 
-    
-    // Automatic Dynamic Route Self-Updating Engine
-    // Continuously audits all aircraft on the map, evicts stale turnaround legs,
-    // and fetches fresh routes dynamically without human intervention.
-    setInterval(() => {
-      if (typeof aircraftMap === 'undefined' || !aircraftMap) return;
-      const nowTs = Date.now();
-      let needsQueue = 0;
-
-      for (const ac of aircraftMap.values()) {
-        if (!ac || !ac.flight) continue;
-        const cs = ac.flight.trim().toUpperCase();
-        if (cs.length < 3 || /^[0-9A-F]{6}$/i.test(cs)) continue;
-
-        const norm = typeof normalizedCallsign === 'function' ? normalizedCallsign(cs) : null;
-        const cached = routeCache.get(cs) || (norm ? routeCache.get(norm) : null);
-
-        if (cached && cached._airports && cached._airports.length >= 2) {
-          if (typeof isRoutePlausible === 'function' && !isRoutePlausible(ac, cached)) {
-            // Evict stale leg
-            routeCache.delete(cs);
-            if (norm) routeCache.delete(norm);
-            if (typeof queueRouteLookup === 'function') {
-              queueRouteLookup(cs, ac.lat, ac.lon);
-              needsQueue++;
-            }
-          }
-        } else if (!cached || cached.expires < nowTs) {
-          if (typeof queueRouteLookup === 'function') {
-            queueRouteLookup(cs, ac.lat, ac.lon);
-            needsQueue++;
-          }
-        }
-      }
-
-      if (needsQueue > 0 && typeof processRouteQueue === 'function') {
-        processRouteQueue();
-      }
-    }, 12000);
-
     // Single Flight Route Lookup (for click on plane)
     async function lookupFlightRoute(callsign, lat, lon) {
       if (!callsign) return;
@@ -7429,16 +7290,6 @@
 
     function displayRoute(r, targetAc) {
       const box = document.getElementById('cardRouteBox');
-      const ac = targetAc || (selectedHex ? aircraftMap.get(selectedHex) : null);
-      if (ac && typeof isRoutePlausible === 'function' && !isRoutePlausible(ac, r)) {
-        if (box) box.style.display = 'none';
-        const dBan = document.getElementById('cardDiversionBanner');
-        if (dBan) dBan.style.display = 'none';
-        currentRouteOrigin = null;
-        currentRouteDest = null;
-        currentRouteDiverted = null;
-        return;
-      }
       const dBan = document.getElementById('cardDiversionBanner');
       if (!r || !r._airports || r._airports.length < 2) {
         if (box) box.style.display = 'none';
@@ -8032,7 +7883,7 @@
           if (selectedHex !== (hex || '').toLowerCase()) return;
           fallback.innerHTML = `
             <div style="position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background: radial-gradient(circle at center, rgba(56, 189, 248,0.08) 0%, rgba(10,15,26,0.92) 80%);">
-              <img src="station-logo.svg" alt="" style="position:absolute; opacity:0.06; max-height:42px; pointer-events:none;">
+              <img src="fiscaglia-favicon.svg" alt="" style="position:absolute; opacity:0.06; max-height:42px; pointer-events:none;">
               <img src="${silUrl}" alt="${type}" style="max-height:75px; max-width:85%; object-fit:contain; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.6));">
             </div>
           `;
@@ -8050,7 +7901,7 @@
       const fallback = document.getElementById('cardPhotoFallback');
       fallback.innerHTML = `
         <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:12px; text-align:center;">
-          <img src="station-logo.svg" alt="ADSBItalia" style="max-height:36px; opacity:0.35; margin-bottom:4px;">
+          <img src="fiscaglia-favicon.svg" alt="ADSBItalia" style="max-height:36px; opacity:0.35; margin-bottom:4px;">
           <span style="font-size:0.75rem; font-weight:600; color:var(--text-muted);">No photo available</span>
         </div>
       `;
@@ -8216,7 +8067,7 @@
           const cs = ac.flight.trim().toUpperCase();
           const norm = normalizedCallsign(cs);
           const rObj = routeCache.get(cs) || (norm ? routeCache.get(norm) : null);
-          if (rObj && rObj._airports && rObj._airports.length >= 2 && (typeof isRoutePlausible !== 'function' || isRoutePlausible(ac, rObj))) {
+          if (rObj && rObj._airports && rObj._airports.length >= 2) {
             const o = rObj._airports[0].iata || rObj._airports[0].icao;
             const d = rObj._airports[rObj._airports.length - 1].iata || rObj._airports[rObj._airports.length - 1].icao;
             const title = `${rObj._airports[0].location || rObj._airports[0].name || o} ➔ ${rObj._airports[rObj._airports.length - 1].location || rObj._airports[rObj._airports.length - 1].name || d}`;

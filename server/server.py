@@ -25,7 +25,7 @@ ENV_TAR1090_URL = os.environ.get("TAR1090_URL")
 ENV_FEEDER_URL = os.environ.get("FEEDER_URL") or ENV_TAR1090_URL
 ENV_AIRCRAFT_URL = os.environ.get("AIRCRAFT_URL")
 ENV_RECEIVER_URL = os.environ.get("RECEIVER_URL")
-ENV_ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
+ENV_GRAPHS_URL = os.environ.get("GRAPHS_URL") or os.environ.get("STATION_GRAPHS_URL")
 
 # Auto-derive endpoints if TAR1090_URL or FEEDER_URL is specified
 if ENV_FEEDER_URL:
@@ -59,12 +59,6 @@ mimetypes.add_type("image/svg+xml", ".svg")
 mimetypes.add_type("text/javascript", ".js")
 mimetypes.add_type("text/css", ".css")
 
-def get_admin_password():
-    if ENV_ADMIN_PASSWORD:
-        return ENV_ADMIN_PASSWORD.strip()
-    cfg = load_config()
-    return cfg.get("security", {}).get("admin_password", "").strip()
-
 def get_default_config():
     return {
         "station": {
@@ -94,9 +88,6 @@ def get_default_config():
             "border_color": "rgba(56, 189, 248, 0.22)",
             "accent_glow": "rgba(56, 189, 248, 0.45)"
         },
-        "security": {
-            "admin_password": ""
-        },
         "features": {
             "enable_photos": True,
             "photo_provider": "adsbitalia_proxy",
@@ -105,7 +96,8 @@ def get_default_config():
             "enable_diversions": True,
             "enable_military_filter": True,
             "default_units": "aviation",
-            "default_zoom": 7.5
+            "default_zoom": 7.5,
+            "graphs_url": ENV_GRAPHS_URL or "/graphs/"
         }
     }
 
@@ -120,6 +112,11 @@ def load_config():
                     st["name"] = "ADS-B Station"
                 if not st.get("logo_url") or "fiscaglia" in st.get("logo_url", "").lower():
                     st["logo_url"] = "station-logo.svg"
+                feat = cfg.setdefault("features", {})
+                if ENV_GRAPHS_URL:
+                    feat["graphs_url"] = ENV_GRAPHS_URL
+                elif "graphs_url" not in feat:
+                    feat["graphs_url"] = "/graphs/"
                 return cfg
         except Exception as e:
             print(f"[WARN] Error reading {CONFIG_PATH}: {e}, using default.")
@@ -176,74 +173,27 @@ class StationRadarHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=WEB_DIR, **kwargs)
 
-    def do_OPTIONS(self):
-        self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Admin-Password, Authorization")
-        self.end_headers()
-
     def do_GET(self):
         clean_path = self.path.split("?")[0].rstrip("/")
 
-        # Route: API Configuration (handles subpaths like /station-radar/api/config)
-        if clean_path == "/api/config" or clean_path.endswith("/api/config"):
+        # Route: API Configuration
+        if clean_path == "/api/config":
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             cfg = load_config()
-            pwd = get_admin_password()
-            cfg_copy = json.loads(json.dumps(cfg))
-            cfg_copy["is_protected"] = bool(pwd)
-            cfg_copy["is_locked"] = bool(pwd)
-            if "security" in cfg_copy:
-                cfg_copy["security"].pop("admin_password", None)
-            self.wfile.write(json.dumps(cfg_copy).encode("utf-8"))
-            return
-
-        # Route: Airline banner index (local or CDN proxy)
-        if clean_path.endswith("/operator-banner-index.json"):
-            local_idx = os.path.join(WEB_DIR, "images/airline-banners/operator-banner-index.json")
-            if os.path.exists(local_idx) and os.path.getsize(local_idx) > 1000:
-                try:
-                    with open(local_idx, "rb") as f:
-                        data = f.read()
-                    self.send_response(200)
-                    self.send_header("Content-Type", "application/json")
-                    self.send_header("Access-Control-Allow-Origin", "*")
-                    self.end_headers()
-                    self.wfile.write(data)
-                    return
-                except Exception:
-                    pass
-            try:
-                remote_url = "https://adsbitalia.it/images/airline-banners/operator-banner-index.json"
-                req = urllib.request.Request(remote_url, headers={"User-Agent": "ADSBItalia-Station-Radar/1.0"})
-                with urllib.request.urlopen(req, timeout=5) as resp:
-                    data = resp.read()
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(data)
-                return
-            except Exception:
-                pass
-
-        # Route: Outline Range Silhouette
-        if clean_path == "/api/outline.json" or clean_path.endswith("/api/outline.json") or clean_path.endswith("/data/outline.json"):
-            self.proxy_outline_json()
+            self.wfile.write(json.dumps(cfg).encode("utf-8"))
             return
 
         # Route: Proxy / Local live aircraft data
-        if clean_path == "/api/aircraft.json" or clean_path.endswith("/api/aircraft.json"):
+        if clean_path == "/api/aircraft.json":
             self.proxy_aircraft_json()
             return
 
         # Route: Proxy / Local receiver data
-        if clean_path == "/api/receiver.json" or clean_path.endswith("/api/receiver.json"):
+        if clean_path == "/api/receiver.json":
             self.proxy_receiver_json()
             return
 
@@ -259,7 +209,7 @@ class StationRadarHandler(SimpleHTTPRequestHandler):
             return
 
         # Route: Proxy / Local Flags (serves local bundled SVG, or fetches from adsbitalia CDN)
-        if "/flags/" in clean_path:
+        if clean_path.startswith("/flags/"):
             clean_rel = clean_path.lstrip("/")
             local_flag = os.path.join(WEB_DIR, clean_rel)
             if os.path.exists(local_flag):
@@ -288,7 +238,7 @@ class StationRadarHandler(SimpleHTTPRequestHandler):
                 return
 
         # Route: Proxy / Local Aircraft Silhouettes
-        if "/aircraft_sil/" in clean_path:
+        if clean_path.startswith("/aircraft_sil/"):
             clean_rel = clean_path.lstrip("/")
             local_sil = os.path.join(WEB_DIR, clean_rel)
             if os.path.exists(local_sil):
@@ -332,7 +282,7 @@ class StationRadarHandler(SimpleHTTPRequestHandler):
         clean_path = self.path.split("?")[0].rstrip("/")
 
         # Route: Proxy Live Routes API
-        if clean_path.startswith("/api/0/routeset") or "/api/0/routeset" in clean_path:
+        if clean_path.startswith("/api/0/routeset"):
             try:
                 length = int(self.headers.get("Content-Length", 0))
                 req_body = self.rfile.read(length)
@@ -360,47 +310,24 @@ class StationRadarHandler(SimpleHTTPRequestHandler):
                 self.wfile.write(b"[]")
                 return
 
-        # Route: Save Configuration (with password protection & subpath support)
-        if clean_path == "/api/config" or clean_path.endswith("/api/config"):
+        # Route: Save Configuration
+        if clean_path == "/api/config":
             try:
                 length = int(self.headers.get("Content-Length", 0))
                 body = self.rfile.read(length).decode("utf-8")
                 new_cfg = json.loads(body)
                 current = load_config()
 
-                # Verify Password if protected
-                active_pwd = get_admin_password()
-                req_pwd = self.headers.get("X-Admin-Password") or new_cfg.get("admin_password") or ""
-                if active_pwd and req_pwd.strip() != active_pwd:
-                    self.send_response(401)
-                    self.send_header("Content-Type", "application/json")
-                    self.send_header("Access-Control-Allow-Origin", "*")
-                    self.end_headers()
-                    self.wfile.write(json.dumps({"status": "error", "ok": False, "error": "Incorrect admin password"}).encode("utf-8"))
-                    return
-
                 for sec in ["station", "source", "theme", "features"]:
                     if sec in new_cfg and isinstance(new_cfg[sec], dict):
                         current.setdefault(sec, {}).update(new_cfg[sec])
-
-                # Handle setting/removing password
-                if "new_admin_password" in new_cfg:
-                    new_p = str(new_cfg["new_admin_password"]).strip()
-                    if new_p.lower() == "none" or new_p == "":
-                        current.setdefault("security", {})["admin_password"] = ""
-                    else:
-                        current.setdefault("security", {})["admin_password"] = new_p
 
                 if save_config(current):
                     self.send_response(200)
                     self.send_header("Content-Type", "application/json")
                     self.send_header("Access-Control-Allow-Origin", "*")
                     self.end_headers()
-                    current_clean = json.loads(json.dumps(current))
-                    if "security" in current_clean:
-                        current_clean["security"].pop("admin_password", None)
-                    current_clean["is_protected"] = bool(get_admin_password())
-                    self.wfile.write(json.dumps({"status": "ok", "ok": True, "config": current_clean}).encode("utf-8"))
+                    self.wfile.write(json.dumps({"status": "ok", "config": current}).encode("utf-8"))
                 else:
                     self.send_response(500)
                     self.send_header("Content-Type", "application/json")
@@ -536,71 +463,6 @@ class StationRadarHandler(SimpleHTTPRequestHandler):
 
         self.send_response(404)
         self.end_headers()
-
-
-    def proxy_outline_json(self):
-        local_candidates = [
-            "/run/readsb/outline.json",
-            "/run/dump1090-fa/outline.json",
-            "/var/globe_history/outline.json",
-            "/opt/adsb/ultrafeeder/readsb/outline.json"
-        ]
-        for path in local_candidates:
-            if os.path.exists(path):
-                try:
-                    with open(path, "rb") as f:
-                        data = f.read()
-                    self.send_response(200)
-                    self.send_header("Content-Type", "application/json")
-                    self.send_header("Access-Control-Allow-Origin", "*")
-                    self.end_headers()
-                    self.wfile.write(data)
-                    return
-                except Exception:
-                    pass
-
-        cfg = load_config()
-        clean_base = (ENV_FEEDER_URL or cfg.get("source", {}).get("aircraft_url", "")).rstrip("/")
-        if clean_base.endswith("/data/aircraft.json"):
-            clean_base = clean_base[:-19]
-        elif clean_base.endswith("/aircraft.json"):
-            clean_base = clean_base[:-14]
-
-        candidates = []
-        if clean_base:
-            candidates.extend([
-                f"{clean_base}/data/outline.json",
-                f"{clean_base}/tar1090/data/outline.json",
-                f"{clean_base}/outline.json"
-            ])
-        candidates.extend([
-            "http://127.0.0.1:8080/data/outline.json",
-            "http://127.0.0.1/data/outline.json",
-            "http://127.0.0.1:8080/tar1090/data/outline.json",
-            "http://127.0.0.1/tar1090/data/outline.json",
-            "http://ultrafeeder/data/outline.json"
-        ])
-
-        for target in candidates:
-            try:
-                req = urllib.request.Request(target, headers={"User-Agent": "ADSBItalia-StationRadar/1.0"})
-                with urllib.request.urlopen(req, timeout=2.5) as resp:
-                    data = resp.read()
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(data)
-                return
-            except Exception:
-                continue
-
-        # Fallback empty outline
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.end_headers()
-        self.wfile.write(b"{}")
 
     def proxy_aircraft_json(self):
         local_candidates = [
